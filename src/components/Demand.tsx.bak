@@ -1,0 +1,135 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { ReactTabulator, ReactTabulatorOptions } from 'react-tabulator';
+import 'react-tabulator/lib/styles.css';
+import { supabase } from '../supabaseClient';
+
+import { QueryResult, QueryData, QueryError } from '@supabase/supabase-js'
+
+type SaturatedDemandEntry = {
+    user: {
+        id: number;
+        name: string;
+    };
+    booth: {
+        id: number;
+        jname: string | null;
+        location: string;
+    };
+    created_at: string;
+};
+
+type DemandTableProp = {
+  demander_id: number;
+  team_id: number;
+  team_name: string;
+  event_id: number;
+}
+
+const DemandTable: React.FC<DemandTableProp> = props => {
+  const {
+    team_id, demander_id, team_name, event_id
+  } = props;
+  const [data, setData] = useState<SaturatedDemandEntry[]>([]);
+  const tableRef = useRef<any>(null);
+
+  // Tabulator 옵션
+  const options: ReactTabulatorOptions = {
+    layout: 'fitData',
+    reactiveData: true,
+  };
+
+  // 컬럼 정의
+  const columns = [
+    { title: '부스', field: 'kname', editor: 'input' },
+    { title: '품목', field: 'items', editor: 'input'},
+    { title: '위치', field: 'location', editor: 'input' },
+  ];
+
+  const fetchData = async () => {
+    const query = supabase
+      .from('e_demand')
+      .select(`
+        user!inner(
+          id,
+          name
+        ),
+        booth!inner(
+          id,
+          jname,
+          location,
+          event_id,
+          data
+        ),
+        created_at
+        `)
+      .eq("demander_id", demander_id)
+      .eq("booth.event_id", event_id)
+      .order('created_at', { ascending: true });
+    type CheckSaturatedDemandEntries = QueryData<typeof query>;
+    const {data, error} = await query;
+    if (error) {
+      console.log("Query failed");
+    } else {
+      const saturatedDemandEntries: CheckSaturatedDemandEntries = data;
+      setData(saturatedDemandEntries);
+    }
+  };
+
+  // ✅ 셀 수정 시 DB 업데이트
+  const handleCellEdited = async (cell: any) => {
+    const updatedRow = cell.getRow().getData() as RowData;
+    const { error } = await supabase
+      .from(tableName)
+      .update({
+        name: updatedRow.name,
+        description: updatedRow.description,
+      })
+      .eq('id', updatedRow.id);
+
+    if (error) console.error('Update error:', error.message);
+  };
+
+  // ✅ 새 항목 추가
+  const handleAddRow = async () => {
+    const { data: inserted, error } = await supabase
+      .from(tableName)
+      .insert([
+        {
+          name: 'New Item',
+          description: 'Description...',
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Insert error:', error.message);
+    } else if (inserted) {
+      setData((prev) => [...prev, inserted as RowData]);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return (
+    <div>
+      <button
+        onClick={handleAddRow}
+        style={{ marginBottom: '10px', padding: '6px 12px' }}
+      >
+        ➕ Add Row
+      </button>
+      <ReactTabulator
+        ref={tableRef}
+        data={data}
+        columns={columns}
+        // options={options}
+        cellEdited={handleCellEdited}
+      />
+    </div>
+  );
+};
+
+export default DemandTable;

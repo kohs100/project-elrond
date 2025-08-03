@@ -1,0 +1,54 @@
+.booth-box {
+  width: 300px;
+  height: 128px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  column-gap: "3px";
+  justify-items: stretch;
+  align-items: stretch;
+  position: relative;
+  grid-column-gap: 3px
+}
+
+.booth-img {
+  grid-column: 1 / 2;
+  width: 90px;
+  height: 128px;
+}
+
+.booth-img-after {
+  width: 19.5px;
+  height: 19.5px;
+  left: 3px;
+  top: 3px;
+  position: absolute;
+}
+
+.booth-txt {
+  overflow: hidden;
+  grid-column: 2 / 3;
+  width: 100%;
+  height: 100%;
+  text-align: left;
+}
+
+.booth-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  overflow-y: scroll;
+  border: 1px solid red;
+  min-width: 330px;
+  height: 100%;
+  align-items: flex-start;
+}
+
+.booth-table-entry {
+  padding: 3px;
+  margin: 3px;
+  border: 1px solid black;
+  width: 300px;
+  text-align: center;
+}

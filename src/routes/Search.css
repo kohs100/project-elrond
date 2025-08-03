@@ -1,0 +1,28 @@
+.searchbar-box {
+  grid-template-columns: 1fr 10em 0.5em 4em 2em 1fr;
+  grid-column-gap: 3px;
+  display: grid;
+}
+
+.searchbar-inp {
+  grid-column: 2 / 3;
+
+  width: 100%;
+  height: 100%;
+
+  font-size: large;
+}
+
+.searchbar-drop {
+  grid-column: 4 / 5;
+}
+
+.searchbar-submit {
+  grid-column: 5 / 6;
+}
+
+input {
+  -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
