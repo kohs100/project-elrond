@@ -71,7 +71,7 @@ function MapCanvas({ mapName }: MapCanvasProp) {
 
   useEffect(() => {
     setupMapmetadata();
-  });
+  }, []);
 
   const setupMapmetadata = () => {
     const { blockDict, backgroundUrl } = mapNameDict[mapName];
@@ -163,8 +163,6 @@ function MapCanvas({ mapName }: MapCanvasProp) {
         return;
       }
       const { x, y } = fromBlockCoord(coord);
-
-      console.log(`Found ${locstring}: ${x} / ${y}`);
 
       ctx.fillStyle = color;
 

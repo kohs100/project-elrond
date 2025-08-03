@@ -8,6 +8,7 @@ import Search from "./routes/Search";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import FullMap from "./routes/FullMap";
+import MainMenu from "./routes/Menu";
 
 function App() {
   return (
@@ -16,7 +17,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/logout" element={<Logout />} />
-          <Route path="/" element={<Navigate replace to="/dashboard" />} />
+          <Route path="/" element={<MainMenu />} />
           <Route path="/search" element={<Search />} />
           <Route path="/teams" element={<ListTeam />} />
           <Route path="/dashboard" element={<Dashboard />} />

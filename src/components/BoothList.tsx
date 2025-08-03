@@ -36,7 +36,7 @@ export function BoothEntry({ booth_id, markcolor = "red" }: BoothEntryProp) {
 
   useEffect(() => {
     fetchData();
-  });
+  }, []);
 
   const generateURLs = (data: BoothRow) => {
     const urls: React.JSX.Element[] = [];
