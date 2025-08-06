@@ -1,46 +1,63 @@
-import React, { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { supabase } from "../supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
-const Login = () => {
+export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [message, setMessage] = useState("");
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) alert(error.message);
-    else navigate("/");
+    if (error) {
+      setMessage(error.message);
+    } else {
+      navigate("/");
+    }
   };
 
-  const handleSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    handleLogin();
-  }
-
   return (
-    <div className="p-4">
-      <h1>로그인</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button type="submit" onClick={handleLogin}>로그인</button>
-      </form>
+    <div className="flex justify-center items-center h-screen bg-gray-100">
+      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+        <h2 className="text-xl font-bold mb-4 text-center">로그인</h2>
+        <form onSubmit={handleLogin}>
+          <input
+            type="email"
+            placeholder="이메일"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="border w-full p-2 mb-4 rounded"
+            required
+          />
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="border w-full p-2 mb-4 rounded"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600"
+          >
+            로그인
+          </button>
+        </form>
+        {message && (
+          <p className="mt-3 text-center text-sm text-red-500">{message}</p>
+        )}
+        <div className="mt-4 text-center">
+          <Link to="/forgot-password" className="text-blue-500 hover:underline">
+            비밀번호 재설정
+          </Link>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default Login;
+}

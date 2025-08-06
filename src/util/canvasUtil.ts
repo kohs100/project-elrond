@@ -11,18 +11,6 @@ interface IRawXY { x: number; y: number; }
 interface IView extends IRawXY { intoAbs(scale: number): IAbs }
 interface IAbs extends IRawXY { intoView(scale: number): IView; intoBlk(): IBlk }
 interface IBlk extends IRawXY { intoAbs(): IAbs }
-
-interface ICoord<T extends IView | IAbs | IBlk> extends IRawXY {
-  sub(rhs: ICoord<T> & T): IOffset<T>;
-  subOffset(rhs: IOffset<T> & T): ICoord<T> & T;
-  addOffset(rhs: IOffset<T> & T): ICoord<T> & T;
-};
-interface IOffset<T extends IView | IAbs | IBlk> extends IRawXY {
-  sub(rhs: this): IOffset<T> & T;
-  add(rhs: this): IOffset<T> & T;
-  l2norm(): number;
-};
-
 class RawXY implements IRawXY {
   x: number;
   y: number;
@@ -35,9 +23,6 @@ class RawXY implements IRawXY {
   rawdiv = (sc: number) => ({ x: this.x / sc, y: this.y / sc })
   rawmul = (sc: number) => ({ x: this.x * sc, y: this.y * sc })
   rawl2norm = () => Math.sqrt(this.x * this.x + this.y * this.y)
-  static from<T extends typeof RawXY>(this: T, arg: IRawXY): InstanceType<T> {
-    return new this(arg) as InstanceType<T>;
-  }
   rawblk = () => ({
     x: Math.floor(this.x / BLOCKSIZE),
     y: Math.floor(this.y / BLOCKSIZE)
@@ -48,7 +33,24 @@ class RawXY implements IRawXY {
   })
   rawdivelem = (rhs: IRawXY) => ({ x: this.x / rhs.x, y: this.y / rhs.y })
   rawmulelem = (rhs: IRawXY) => ({ x: this.x * rhs.x, y: this.y * rhs.y })
+
+  // Type dark magic
+  static from<T extends typeof RawXY>(this: T, arg: IRawXY): InstanceType<T> {
+    return new this(arg) as InstanceType<T>;
+  }
 }
+
+interface ICoord<T extends IView | IAbs | IBlk> extends IRawXY {
+  sub(rhs: ICoord<T> & T): IOffset<T>;
+  subOffset(rhs: IOffset<T> & T): ICoord<T> & T;
+  addOffset(rhs: IOffset<T> & T): ICoord<T> & T;
+};
+interface IOffset<T extends IView | IAbs | IBlk> extends IRawXY {
+  sub(rhs: this): IOffset<T> & T;
+  add(rhs: this): IOffset<T> & T;
+  l2norm(): number;
+};
+
 
 export class ViewCoord extends RawXY implements IView, ICoord<IView> {
   intoAbs = (scale: number) => AbsCoord.from(this.rawdiv(scale))
@@ -67,6 +69,22 @@ export class ViewOffset extends RawXY implements IView, IOffset<IView> {
   sub = (rhs: ViewOffset) => ViewOffset.from(this.rawsub(rhs))
   add = (rhs: ViewOffset) => ViewOffset.from(this.rawadd(rhs))
   l2norm = () => this.rawl2norm()
+  static sizeOfCanvas(canvas: HTMLCanvasElement) {
+    const canvasRect = canvas.getBoundingClientRect();
+
+  return new ViewOffset({
+      x: canvasRect.width,
+      y: canvasRect.height
+    })
+  }
+  static offsetOfCanvas(canvas: HTMLCanvasElement) {
+    const canvasRect = canvas.getBoundingClientRect();
+
+  return new ViewOffset({
+      x: canvasRect.left,
+      y: canvasRect.top
+    })
+  }
 }
 export class AbsCoord extends RawXY implements IAbs, ICoord<IAbs> {
   intoView = (scale: number) => ViewCoord.from(this.rawmul(scale))
@@ -93,24 +111,6 @@ export class BlockOffset extends RawXY implements IBlk, IOffset<IBlk> {
   sub = (rhs: BlockOffset) => BlockOffset.from(this.rawsub(rhs))
   add = (rhs: BlockOffset) => BlockOffset.from(this.rawadd(rhs))
   l2norm = () => this.rawl2norm()
-}
-
-export function getCanvasOffset(canvas: HTMLCanvasElement): ViewOffset {
-  const canvasRect = canvas.getBoundingClientRect();
-
-  return new ViewOffset({
-    x: canvasRect.left,
-    y: canvasRect.top
-  })
-}
-
-export function getCanvasSize(canvas: HTMLCanvasElement): ViewOffset {
-  const canvasRect = canvas.getBoundingClientRect();
-
-  return new ViewOffset({
-    x: canvasRect.width,
-    y: canvasRect.height
-  })
 }
 
 export function limitOffset(

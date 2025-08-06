@@ -16,6 +16,8 @@ export type Database = {
     Tables: {
       booth: {
         Row: {
+          circle_id: number
+          circle_type: number
           created_at: string
           data: Json
           event_id: number
@@ -26,6 +28,8 @@ export type Database = {
           location_top: string | null
         }
         Insert: {
+          circle_id: number
+          circle_type: number
           created_at?: string
           data: Json
           event_id: number
@@ -36,6 +40,8 @@ export type Database = {
           location_top?: string | null
         }
         Update: {
+          circle_id?: number
+          circle_type?: number
           created_at?: string
           data?: Json
           event_id?: number
@@ -47,6 +53,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "booth_circle_id_circle_type_fkey"
+            columns: ["circle_id", "circle_type"]
+            isOneToOne: false
+            referencedRelation: "circle"
+            referencedColumns: ["circleid", "circle_type"]
+          },
+          {
             foreignKeyName: "booth_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -55,74 +68,52 @@ export type Database = {
           },
         ]
       }
-      e_demand: {
+      circle: {
         Row: {
-          booth_id: number
+          circle_type: number
+          circleid: number
           created_at: string
-          demander_id: number
-          item: Json | null
+          name: string
         }
         Insert: {
-          booth_id: number
+          circle_type: number
+          circleid: number
           created_at?: string
-          demander_id: number
-          item?: Json | null
+          name: string
         }
         Update: {
-          booth_id?: number
+          circle_type?: number
+          circleid?: number
           created_at?: string
-          demander_id?: number
-          item?: Json | null
+          name?: string
         }
         Relationships: [
           {
-            foreignKeyName: "e_demand_booth_id_fkey"
-            columns: ["booth_id"]
+            foreignKeyName: "circle_circle_type_fkey"
+            columns: ["circle_type"]
             isOneToOne: false
-            referencedRelation: "booth"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "e_demand_demander_id_fkey"
-            columns: ["demander_id"]
-            isOneToOne: false
-            referencedRelation: "user"
+            referencedRelation: "circle_type"
             referencedColumns: ["id"]
           },
         ]
       }
-      e_supply: {
+      circle_type: {
         Row: {
-          booth_id: number
           created_at: string
-          supplier_id: number
+          id: number
+          name: string | null
         }
         Insert: {
-          booth_id: number
           created_at?: string
-          supplier_id: number
+          id?: number
+          name?: string | null
         }
         Update: {
-          booth_id?: number
           created_at?: string
-          supplier_id?: number
+          id?: number
+          name?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "e_supply_booth_id_fkey"
-            columns: ["booth_id"]
-            isOneToOne: false
-            referencedRelation: "booth"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "e_supply_supplier_id_fkey"
-            columns: ["supplier_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       event: {
         Row: {
@@ -147,6 +138,42 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      favorites: {
+        Row: {
+          booth_id: number
+          color: string
+          created_at: string
+          user_id: number
+        }
+        Insert: {
+          booth_id: number
+          color: string
+          created_at?: string
+          user_id: number
+        }
+        Update: {
+          booth_id?: number
+          color?: string
+          created_at?: string
+          user_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_booth_id_fkey"
+            columns: ["booth_id"]
+            isOneToOne: false
+            referencedRelation: "booth"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shinagaki: {
         Row: {

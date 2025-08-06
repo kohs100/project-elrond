@@ -6,18 +6,18 @@ import {
   ViewOffset,
   type ClientXY,
   CoordMap,
-  getCanvasOffset,
   getMidpoint,
   getTouchDistance,
   limitOffset,
   BLOCKSIZE,
-  getCanvasSize,
+  AbsCoord,
 } from "../util/canvasUtil";
 
 import { type MapMetadata } from "../util/mapType";
 
 import d1_e456 from "./mapData/c106_day1_e456";
 import d1_w from "./mapData/c106_day1_w";
+import { supabase } from "../supabaseClient";
 
 const mapNameDict: Dictionary<MapMetadata> = {
   d1_e456: d1_e456,
@@ -37,6 +37,7 @@ type MapLabel = {
   blkid: string;
 };
 type Overlay = {
+  coord: BlockCoord;
   locstring: string;
   is2sp: boolean;
   color: string;
@@ -47,37 +48,16 @@ type MapCanvasProp = {
 };
 
 function MapCanvas({ mapName }: MapCanvasProp) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [touchCoord, setTouchCoord] = useState("");
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [viewScale, setViewScale] = useState(1);
-  const [viewOffset, setViewOffset] = useState(new ViewOffset({ x: 0, y: 0 }));
-
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDraggingStarted, setIsDraggingStarted] = useState(false);
-  const [dragStart, setDragStart] = useState(new ViewCoord({ x: 0, y: 0 }));
-
-  const [lastTouchDistance, setLastTouchDistance] = useState(0);
-
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
   const [mapblocks, setMapblocks] = useState<MapBlock[]>([]);
   const [maplabels, setMaplabels] = useState<MapLabel[]>([]);
-  const [overlays] = useState<Overlay[]>([
-    {
-      locstring: "ヤ17",
-      is2sp: false,
-      color: "red",
-    },
-    {
-      locstring: "ヤ16",
-      is2sp: true,
-      color: "blue",
-    },
-  ]);
-
-  const [touchCoord, setTouchCoord] = useState("");
+  const [overlays, setOverlays] = useState<Overlay[]>([]);
 
   useEffect(() => {
     setupMapmetadata();
+    setupOverlays();
   }, []);
 
   const setupMapmetadata = () => {
@@ -138,6 +118,64 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     setCoordDict(newCoordDict);
   };
 
+  const setupOverlays = async () => {
+    supabase.from("favorites").select("*")
+  }
+
+  const handleClick = (absCoord: AbsCoord) => {
+    const blockCoord = absCoord.intoBlk();
+    if (coordDict === null) return;
+    const locstring = coordDict.getLocstring(blockCoord);
+    if (locstring) {
+      setTouchCoord(locstring);
+    }
+  };
+
+  if (image)
+    return (
+      <div style={{ width: "100vw", height: "80dvh" }}>
+        <MapCanvasInner
+          mapName={mapName}
+          image={image}
+          mapblocks={mapblocks}
+          maplabels={maplabels}
+          overlays={overlays}
+          handleClick={handleClick}
+        />
+        : <></>
+        <h2>{touchCoord}</h2>
+      </div>
+    );
+}
+
+type MapCanvasInnerProp = {
+  mapName: string;
+  image: HTMLImageElement;
+  mapblocks: MapBlock[];
+  maplabels: MapLabel[];
+  overlays: Overlay[];
+  handleClick: (absCoord: AbsCoord) => void;
+};
+
+function MapCanvasInner({
+  mapName,
+  image,
+  mapblocks,
+  maplabels,
+  overlays,
+  handleClick,
+}: MapCanvasInnerProp) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const [viewScale, setViewScale] = useState(1);
+  const [viewOffset, setViewOffset] = useState(new ViewOffset({ x: 0, y: 0 }));
+
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingStarted, setIsDraggingStarted] = useState(false);
+  const [dragStart, setDragStart] = useState(new ViewCoord({ x: 0, y: 0 }));
+
+  const [lastTouchDistance, setLastTouchDistance] = useState(0);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -180,10 +218,8 @@ function MapCanvas({ mapName }: MapCanvasProp) {
       ctx.fillText(blkid, x + BLOCKSIZE, y + BLOCKSIZE);
     });
 
-    if (coordDict === null) return;
     overlays.forEach((ovl: Overlay) => {
-      const { locstring, color, is2sp } = ovl;
-      const coord = coordDict.getCoord(locstring);
+      const { coord, locstring, color, is2sp } = ovl;
       if (coord === undefined) {
         console.log(`${locstring} not found!!`);
         return;
@@ -203,7 +239,7 @@ function MapCanvas({ mapName }: MapCanvasProp) {
         ctx.fill();
       }
     });
-  }, [image, viewScale, viewOffset, mapblocks, overlays, coordDict]);
+  }, [image, viewScale, viewOffset, mapblocks, overlays]);
 
   const handleDown = (clientxy: ClientXY) => {
     setIsDragging(false);
@@ -225,7 +261,7 @@ function MapCanvas({ mapName }: MapCanvasProp) {
       if (!canvas) return;
 
       const viewSize = size.intoAbs().intoView(viewScale);
-      const offsetLimit = getCanvasSize(canvas).sub(viewSize);
+      const offsetLimit = ViewOffset.sizeOfCanvas(canvas).sub(viewSize);
 
       const dViewCoord = clientCoord.sub(dragStart);
       setViewOffset(limitOffset(dViewCoord, offsetLimit, null));
@@ -237,20 +273,13 @@ function MapCanvas({ mapName }: MapCanvasProp) {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const canvasOffset = getCanvasOffset(canvas);
-
-      const clientCoord = ViewCoord.fromClient(clientxy);
-      const blockCoord = clientCoord
-        .subOffset(canvasOffset)
-        .subOffset(viewOffset)
-        .intoAbs(viewScale)
-        .intoBlk();
-
-      if (coordDict === null) return;
-      const locstring = coordDict.getLocstring(blockCoord);
-      if (locstring) {
-        setTouchCoord(locstring);
-      }
+      const canvasOffset = ViewOffset.offsetOfCanvas(canvas);
+      handleClick(
+        ViewCoord.fromClient(clientxy)
+          .subOffset(canvasOffset)
+          .subOffset(viewOffset)
+          .intoAbs(viewScale)
+      );
     }
     setIsDragging(false);
   };
@@ -264,7 +293,7 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     const { size } = mapNameDict[mapName];
     const viewSize = size.intoAbs().intoView(viewScale);
 
-    const { x: limitX, y: limitY } = getCanvasSize(canvas).rawdivelem(
+    const { x: limitX, y: limitY } = ViewOffset.sizeOfCanvas(canvas).rawdivelem(
       size.intoAbs()
     );
 
@@ -272,12 +301,12 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     const newScale = nextScale > scaleLimit ? nextScale : scaleLimit;
 
     const newClientCoord = clientCoord
-      .subOffset(getCanvasOffset(canvas))
+      .subOffset(ViewOffset.offsetOfCanvas(canvas))
       .subOffset(viewOffset)
       .intoAbs(viewScale)
       .intoView(newScale);
     const newViewOffset = clientCoord.sub(newClientCoord);
-    const offsetLimit = getCanvasSize(canvas).sub(viewSize);
+    const offsetLimit = ViewOffset.sizeOfCanvas(canvas).sub(viewSize);
     setViewScale(newScale);
     setViewOffset(limitOffset(newViewOffset, offsetLimit, null));
   }
@@ -329,22 +358,19 @@ function MapCanvas({ mapName }: MapCanvasProp) {
   };
 
   return (
-    <div style={{ width: "100vw", height: "80dvh" }}>
-      <canvas
-        ref={canvasRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onWheel={handleWheel}
-        style={{ width: "100%", height: "100%", touchAction: "none" }}
-        className="map-canvas"
-      />
-      <h2>{touchCoord}</h2>
-    </div>
+    <canvas
+      ref={canvasRef}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onWheel={handleWheel}
+      style={{ width: "100%", height: "100%", touchAction: "none" }}
+      className="map-canvas"
+    />
   );
 }
 

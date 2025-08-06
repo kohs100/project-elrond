@@ -1,127 +1,16 @@
 import { useState } from "react";
 import { BoothTable } from "../components/BoothList";
-import { KR2JP } from "../components/SearchMapping";
-import { supabase } from "../supabaseClient";
 
 import "./Search.css";
+import { QueryBuilder } from "../util/searchType";
 
 const VALID_QUERY =
-  /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンーa-zA-Z][0-9]{2}[Aa]*[Bb]*/;
-
-const ALPHA_LOWER = Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
-const ALPHA_UPPER = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
-const ALL_ALPHABETS = ALPHA_LOWER.concat(ALPHA_UPPER);
-const ALL_LOCBLKS = Object.values(KR2JP).flat().concat(ALL_ALPHABETS);
+  /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンーa-zA-Zａ-ｚＡ-Ｚ][0-9]{2}[Aa]*[Bb]*/;
 
 type SearchBarProp = {
   boothIds: number[];
   setBoothIds: React.Dispatch<React.SetStateAction<number[]>>;
 };
-
-class QueryBuilder {
-  hall: Set<string>;
-  locblk: Set<string>;
-  locnum: string;
-  locsubsec: Set<string>;
-
-  constructor() {
-    this.hall = new Set(["東", "南", "西"]);
-    this.locblk = new Set(ALL_LOCBLKS);
-    this.locnum = "00";
-    this.locsubsec = new Set(["a", "b", "ab"]);
-  }
-
-  intersectHall(halls: string[]) {
-    this.hall = new Set(halls.filter((i) => this.hall.has(i)));
-  }
-
-  intersectBlk(blks: string[]) {
-    this.locblk = new Set(blks.filter((i) => this.locblk.has(i)));
-  }
-
-  intersectSubsec(subsecs: string[]) {
-    this.locsubsec = new Set(subsecs.filter((i) => this.locsubsec.has(i)));
-  }
-
-  setHall(hall: string) {
-    if (/[eE동東]/.test(hall)) {
-      this.intersectHall(["東"]);
-    } else if (/[wW서西]/.test(hall)) {
-      this.intersectHall(["西"]);
-    } else if (/[sS남南]/.test(hall)) {
-      this.intersectHall(["南"]);
-    } else {
-      throw new Error(`Invalid hall string: ${hall}`);
-    }
-  }
-
-  setBlk(locblk: string) {
-    if (/[あーん]/.test(locblk)) {
-      this.intersectHall(["西"]);
-      this.intersectBlk([locblk]);
-    } else if (/[アーンA-Z]/.test(locblk)) {
-      this.intersectHall(["東"]);
-      this.intersectBlk([locblk]);
-    } else if (/[a-z]/.test(locblk)) {
-      this.intersectHall(["南"]);
-      this.intersectBlk([locblk]);
-    } else if (locblk in KR2JP) {
-      console.log(`locblk in KR2JP: ${locblk} -> ${KR2JP[locblk]}`);
-      this.intersectHall(["東", "西"]);
-      this.intersectBlk(KR2JP[locblk]);
-    } else {
-      throw new Error(`Invalid locblk string: ${locblk}`);
-    }
-  }
-
-  setNum(numstr: string) {
-    const num = Number(numstr);
-    if (isNaN(num)) {
-      throw new Error(`Invalid locnum: ${num}`);
-    } else if (num < 0 || 99 < num) {
-      throw new Error(`Invalid locnum: ${num}`);
-    }
-    this.locnum = String(num).padStart(2, "0");
-  }
-
-  setSubsec(subsec: string) {
-    if (subsec.length >= 2) {
-      throw new Error (`Invalid subsec string: ${subsec}`);
-    } else if (subsec.length > 0) {
-      this.intersectSubsec([subsec]);
-    }
-  }
-
-  doSearch: (day: number) => Promise<null | number[]> = async (day) => {
-    const location_lst: string[] = [];
-    if (
-      this.hall.size === 0 ||
-      this.locblk.size === 0 ||
-      this.locnum === "00" ||
-      this.locsubsec.size === 0
-    ) {
-      return null;
-    } else {
-      this.locblk.forEach((blk) => {
-        this.locsubsec.forEach((subsec) => {
-          location_lst.push(`${blk}${this.locnum}${subsec}`);
-        });
-      });
-    }
-    console.log(`search loclist: ${location_lst}`);
-    const { data, error } = await supabase
-      .from("booth")
-      .select("id")
-      .eq("event_id", day)
-      .in("location_top", Array.from(this.hall))
-      .in("location", location_lst);
-    if (error) {
-      throw error;
-    }
-    console.log(`found: ${data}`);
-    return data.map((obj) => obj.id);
-  };
-}
 
 const SearchBar: React.FC<SearchBarProp> = (props) => {
   const { setBoothIds } = props;

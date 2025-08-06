@@ -55,6 +55,13 @@ export function BoothEntry({ booth_id, markcolor = "red" }: BoothEntryProp) {
         </a>
       );
     }
+    if (data.circle_id !== 0) {
+      urls.push(
+        <a key="url-circle" href={`https://portal.circle.ms/Circle/Index/${data.circle_id}`}>
+          CMS
+        </a>
+      );
+    }
 
     const result: React.JSX.Element[] = [];
     urls.forEach((url, i) => {
