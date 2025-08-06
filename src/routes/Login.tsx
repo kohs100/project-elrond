@@ -10,13 +10,24 @@ export default function Login() {
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) {
       setMessage(error.message);
     } else {
+      // 로그인 성공
+      const user = data.user;
+      const { error: upsertError } = await supabase.from("user").upsert([
+        {
+          uuid: user.id,
+          name: user.email?.split("@")[0] || "NOEMAIL",
+        },
+      ]);
+      if (upsertError) {
+        throw upsertError;
+      }
       navigate("/");
     }
   };
