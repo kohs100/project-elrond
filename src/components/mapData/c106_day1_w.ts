@@ -1,12 +1,13 @@
+import { BlockCoord, BlockOffset } from "../../util/canvasUtil";
 import { type MapMetadata, LinearRepr, buildColumn as rawBuildColumn } from "../../util/mapType";
 
 type COL_TYP = "52TOP" | "52BOT" | "26" | "28"
 
 const COL_TEMPLATE = {
-  "52TOP": LinearRepr.fromStr("YB N1 Y7 N2 Y8"),
-  "52BOT": LinearRepr.fromStr("Y6 N2 Y7 N1 Y6 N1 Y7"),
-  "26": LinearRepr.fromStr("Y5 N2 Y8"),
-  "28": LinearRepr.fromStr("Y6 N2 Y8"),
+  "52TOP": LinearRepr.fromStr("YB N1 Y7 L2 Y8"),
+  "52BOT": LinearRepr.fromStr("Y6 L2 Y7 N1 Y6 N1 Y7"),
+  "26": LinearRepr.fromStr("Y5 L2 Y8"),
+  "28": LinearRepr.fromStr("Y6 L2 Y8"),
 }
 
 function buildColumn(ctyp: COL_TYP, x: number, y: number) {
@@ -15,80 +16,79 @@ function buildColumn(ctyp: COL_TYP, x: number, y: number) {
 
 const metadata: MapMetadata = {
   backgroundUrl: "images/c106_day1_w.png",
-  size: {
-    blockX: 90,
-    blockY: 67,
-  },
+  size: new BlockOffset({ x: 90, y: 67 }),
   blockDict: {
     "あ": {
       blocks: [
         {
-          origin: { blockX: 71, blockY: 65 },
+          origin: new BlockCoord({ x: 71, y: 65 }),
           axis: "x",
           dir: "+",
           repr: LinearRepr.fromStr("YF")
         },
         {
-          origin: { blockX: 89, blockY: 61 },
+          origin: new BlockCoord({ x: 89, y: 61 }),
           axis: "y",
           dir: "-",
           repr: LinearRepr.fromStr("F3 N3 F3 N4 Y3 N8 Y3 N7 Y3 N7 Y3 N3 Y3 N3 Y3")
         },
         {
-          origin: { blockX: 84, blockY: 0 },
+          origin: new BlockCoord({ x: 84, y: 0 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y3 N2 Y3 N2 Y3 N8 Y3 N3 Y3 N2 Y3")
         },
         {
-          origin: { blockX: 59, blockY: 22 },
+          origin: new BlockCoord({ x: 59, y: 22 }),
           axis: "x",
           dir: "+",
           repr: LinearRepr.fromStr("Y4 F4")
         },
         {
-          origin: { blockX: 67, blockY: 46 },
+          origin: new BlockCoord({ x: 67, y: 46 }),
           axis: "y",
           dir: "+",
           repr: LinearRepr.fromStr("Y4 N8 Y4")
         }
       ],
-      max_num: 73
+      maxNum: 73,
+      labelCoords: []
     },
     "め": {
       blocks: [
         {
-          origin: { blockX: 18, blockY: 65 },
+          origin: new BlockCoord({ x: 18, y: 65 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("YF")
         },
         {
-          origin: { blockX: 0, blockY: 61 },
+          origin: new BlockCoord({ x: 0, y: 61 }),
           axis: "y",
           dir: "-",
           repr: LinearRepr.fromStr("Y3 N3 Y3 N4 Y3 N8 Y3 N7 Y3 N7 Y3 N3 Y3 N3 Y3")
         },
         {
-          origin: { blockX: 3, blockY: 0 },
+          origin: new BlockCoord({ x: 3, y: 0 }),
           axis: "x",
           dir: "+",
           repr: LinearRepr.fromStr("Y3 N4 Y3 N2 Y3 N8 Y3 N3 Y3 N1 Y3")
         },
         {
-          origin: { blockX: 30, blockY: 22 },
+          origin: new BlockCoord({ x: 30, y: 22 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y4 F4")
         },
         {
-          origin: { blockX: 22, blockY: 47 },
+          origin: new BlockCoord({ x: 22, y: 47 }),
           axis: "y",
           dir: "+",
           repr: LinearRepr.fromStr("Y4 N7 Y4")
         }
       ],
-      max_num: 73
+      maxNum: 73,
+      labelCoords: []
     },
     "い": buildColumn("52BOT", 85, 62),
     "う": buildColumn("52BOT", 82, 62),

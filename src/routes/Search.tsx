@@ -6,7 +6,12 @@ import { supabase } from "../supabaseClient";
 import "./Search.css";
 
 const VALID_QUERY =
-  /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンー][0-9]{2}[Aa]*[Bb]*/;
+  /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンーa-zA-Z][0-9]{2}[Aa]*[Bb]*/;
+
+const ALPHA_LOWER = Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
+const ALPHA_UPPER = Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i));
+const ALL_ALPHABETS = ALPHA_LOWER.concat(ALPHA_UPPER);
+const ALL_LOCBLKS = Object.values(KR2JP).flat().concat(ALL_ALPHABETS);
 
 type SearchBarProp = {
   boothIds: number[];
@@ -21,7 +26,7 @@ class QueryBuilder {
 
   constructor() {
     this.hall = new Set(["東", "南", "西"]);
-    this.locblk = new Set(Object.values(KR2JP).flat());
+    this.locblk = new Set(ALL_LOCBLKS);
     this.locnum = "00";
     this.locsubsec = new Set(["a", "b", "ab"]);
   }

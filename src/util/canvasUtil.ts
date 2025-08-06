@@ -1,14 +1,23 @@
 import React from "react";
 
+export const BLOCKSIZE = 20;
+
+export type ClientXY = {
+  clientX: number;
+  clientY: number;
+};
+
 interface IRawXY { x: number; y: number; }
-interface IAbsolute extends IRawXY { scale(scale: number): IScaled }
-interface IScaled extends IRawXY { unscale(scale: number): IAbsolute }
-interface ICoord<T extends IAbsolute | IScaled> extends IRawXY {
+interface IView extends IRawXY { intoAbs(scale: number): IAbs }
+interface IAbs extends IRawXY { intoView(scale: number): IView; intoBlk(): IBlk }
+interface IBlk extends IRawXY { intoAbs(): IAbs }
+
+interface ICoord<T extends IView | IAbs | IBlk> extends IRawXY {
   sub(rhs: ICoord<T> & T): IOffset<T>;
   subOffset(rhs: IOffset<T> & T): ICoord<T> & T;
   addOffset(rhs: IOffset<T> & T): ICoord<T> & T;
 };
-interface IOffset<T extends IAbsolute | IScaled> extends IRawXY {
+interface IOffset<T extends IView | IAbs | IBlk> extends IRawXY {
   sub(rhs: this): IOffset<T> & T;
   add(rhs: this): IOffset<T> & T;
   l2norm(): number;
@@ -23,68 +32,99 @@ class RawXY implements IRawXY {
   }
   rawsub = (rhs: RawXY) => ({ x: this.x - rhs.x, y: this.y - rhs.y })
   rawadd = (rhs: RawXY) => ({ x: this.x + rhs.x, y: this.y + rhs.y })
-  rawscale = (sc: number) => ({ x: this.x / sc, y: this.y / sc })
-  rawunscale = (sc: number) => ({ x: this.x * sc, y: this.y * sc })
+  rawdiv = (sc: number) => ({ x: this.x / sc, y: this.y / sc })
+  rawmul = (sc: number) => ({ x: this.x * sc, y: this.y * sc })
   rawl2norm = () => Math.sqrt(this.x * this.x + this.y * this.y)
   static from<T extends typeof RawXY>(this: T, arg: IRawXY): InstanceType<T> {
     return new this(arg) as InstanceType<T>;
   }
+  rawblk = () => ({
+    x: Math.floor(this.x / BLOCKSIZE),
+    y: Math.floor(this.y / BLOCKSIZE)
+  })
+  rawunblk = () => ({
+    x: this.x * BLOCKSIZE,
+    y: this.y * BLOCKSIZE
+  })
+  rawdivelem = (rhs: IRawXY) => ({ x: this.x / rhs.x, y: this.y / rhs.y })
+  rawmulelem = (rhs: IRawXY) => ({ x: this.x * rhs.x, y: this.y * rhs.y })
 }
 
-export class AbsCoord extends RawXY implements IAbsolute, ICoord<IAbsolute> {
-  scale = (scale: number) => ScaledCoord.from(this.rawscale(scale))
+export class ViewCoord extends RawXY implements IView, ICoord<IView> {
+  intoAbs = (scale: number) => AbsCoord.from(this.rawdiv(scale))
+  sub = (rhs: ViewCoord) => ViewOffset.from(this.rawsub(rhs))
+  subOffset = (rhs: ViewOffset) => ViewCoord.from(this.rawsub(rhs))
+  addOffset = (rhs: ViewOffset) => ViewCoord.from(this.rawadd(rhs))
+  static fromClient({ clientX, clientY }: ClientXY) {
+    return new ViewCoord({
+      x: clientX,
+      y: clientY
+    })
+  }
+}
+export class ViewOffset extends RawXY implements IView, IOffset<IView> {
+  intoAbs = (scale: number) => AbsOffset.from(this.rawdiv(scale))
+  sub = (rhs: ViewOffset) => ViewOffset.from(this.rawsub(rhs))
+  add = (rhs: ViewOffset) => ViewOffset.from(this.rawadd(rhs))
+  l2norm = () => this.rawl2norm()
+}
+export class AbsCoord extends RawXY implements IAbs, ICoord<IAbs> {
+  intoView = (scale: number) => ViewCoord.from(this.rawmul(scale))
+  intoBlk = () => BlockCoord.from(this.rawblk())
   sub = (rhs: AbsCoord) => AbsOffset.from(this.rawsub(rhs))
   subOffset = (rhs: AbsOffset) => AbsCoord.from(this.rawsub(rhs))
   addOffset = (rhs: AbsOffset) => AbsCoord.from(this.rawadd(rhs))
 }
-export class AbsOffset extends RawXY implements IAbsolute, IOffset<IAbsolute> {
-  scale = (scale: number) => ScaledOffset.from(this.rawscale(scale))
+export class AbsOffset extends RawXY implements IAbs, IOffset<IAbs> {
+  intoView = (scale: number) => ViewOffset.from(this.rawmul(scale))
+  intoBlk = () => BlockOffset.from(this.rawblk())
   sub = (rhs: AbsOffset) => AbsOffset.from(this.rawsub(rhs))
   add = (rhs: AbsOffset) => AbsOffset.from(this.rawadd(rhs))
   l2norm = () => this.rawl2norm()
 }
-export class ScaledCoord extends RawXY implements IScaled, ICoord<IScaled> {
-  unscale = (scale: number) => AbsCoord.from(this.rawunscale(scale))
-  sub = (rhs: ScaledCoord) => ScaledOffset.from(this.rawsub(rhs))
-  subOffset = (rhs: ScaledOffset) => ScaledCoord.from(this.rawsub(rhs))
-  addOffset = (rhs: ScaledOffset) => ScaledCoord.from(this.rawadd(rhs))
+export class BlockCoord extends RawXY implements IBlk, ICoord<IBlk> {
+  intoAbs = () => AbsCoord.from(this.rawunblk())
+  sub = (rhs: BlockCoord) => BlockOffset.from(this.rawsub(rhs))
+  subOffset = (rhs: BlockOffset) => BlockCoord.from(this.rawsub(rhs))
+  addOffset = (rhs: BlockOffset) => BlockCoord.from(this.rawadd(rhs))
 }
-export class ScaledOffset extends RawXY implements IScaled, IOffset<IScaled> {
-  unscale = (scale: number) => AbsOffset.from(this.rawunscale(scale))
-  sub = (rhs: ScaledOffset) => ScaledOffset.from(this.rawsub(rhs))
-  add = (rhs: ScaledOffset) => ScaledOffset.from(this.rawadd(rhs))
+export class BlockOffset extends RawXY implements IBlk, IOffset<IBlk> {
+  intoAbs = () => AbsOffset.from(this.rawunblk())
+  sub = (rhs: BlockOffset) => BlockOffset.from(this.rawsub(rhs))
+  add = (rhs: BlockOffset) => BlockOffset.from(this.rawadd(rhs))
   l2norm = () => this.rawl2norm()
 }
 
-export function getCanvasOffset(canvas: HTMLCanvasElement) {
+export function getCanvasOffset(canvas: HTMLCanvasElement): ViewOffset {
   const canvasRect = canvas.getBoundingClientRect();
 
-  return new AbsOffset({
+  return new ViewOffset({
     x: canvasRect.left,
     y: canvasRect.top
   })
 }
 
-export type ClientXY = {
-  clientX: number;
-  clientY: number;
-};
+export function getCanvasSize(canvas: HTMLCanvasElement): ViewOffset {
+  const canvasRect = canvas.getBoundingClientRect();
 
-export function getClientCoord({ clientX, clientY }: ClientXY) {
-  return new AbsCoord({
-    x: clientX,
-    y: clientY
+  return new ViewOffset({
+    x: canvasRect.width,
+    y: canvasRect.height
   })
 }
 
-export function limitOffset(offset: AbsOffset, lower: IRawXY, upper: IRawXY) {
+export function limitOffset(
+  offset: ViewOffset,
+  lower: ViewOffset | null,
+  upper: ViewOffset | null
+) {
   const newOffset = {
     x: offset.x,
     y: offset.y
   };
 
-  const { x: ux, y: uy } = upper;
-  const { x: lx, y: ly } = lower;
+  const { x: ux, y: uy } = upper ? upper : { x: 0, y: 0 };
+  const { x: lx, y: ly } = lower ? lower : { x: 0, y: 0 };
 
   newOffset.x = newOffset.x < lx ? lx : newOffset.x;
   newOffset.y = newOffset.y < ly ? ly : newOffset.y;
@@ -92,24 +132,7 @@ export function limitOffset(offset: AbsOffset, lower: IRawXY, upper: IRawXY) {
   newOffset.x = newOffset.x > ux ? ux : newOffset.x;
   newOffset.y = newOffset.y > uy ? uy : newOffset.y;
 
-  return new AbsOffset(newOffset);
-}
-
-export function getBlockCoord({ x, y }: ScaledCoord): BlockXY {
-  return {
-    blockX: Math.floor(x / 20),
-    blockY: Math.floor(y / 20)
-  }
-}
-
-export function fromBlockCoord({ blockX, blockY }: BlockXY): ScaledCoord {
-  return new ScaledCoord({ x: blockX * 20, y: blockY * 20 })
-}
-
-// Absolute block coordinate
-export type BlockXY = {
-  blockX: number;
-  blockY: number;
+  return new ViewOffset(newOffset);
 }
 
 export function getTouchDistance(touches: React.TouchList): number {
@@ -118,8 +141,8 @@ export function getTouchDistance(touches: React.TouchList): number {
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-export function getMidpoint(touches: React.TouchList): AbsCoord {
-  return new AbsCoord({
+export function getMidpoint(touches: React.TouchList): ViewCoord {
+  return new ViewCoord({
     x: (touches[0].clientX + touches[1].clientX) / 2,
     y: (touches[0].clientY + touches[1].clientY) / 2,
   });
@@ -127,9 +150,9 @@ export function getMidpoint(touches: React.TouchList): AbsCoord {
 
 export class CoordMap {
   private map: Map<number, Map<number, string>> = new Map();
-  private rmap: Map<string, BlockXY> = new Map();
+  private rmap: Map<string, BlockCoord> = new Map();
 
-  set(coord: BlockXY, locstring: string) {
+  set(coord: BlockCoord, locstring: string) {
     const foundLocstring = this.getLocstring(coord);
     const foundCoord = this.getCoord(locstring);
 
@@ -139,45 +162,44 @@ export class CoordMap {
     if (foundCoord) {
       console.log(`Duplicated locstring: ${locstring}: existing ${foundCoord} -> ${coord}`)
     }
-    if (!this.map.has(coord.blockX)) {
-      this.map.set(coord.blockX, new Map());
+    if (!this.map.has(coord.x)) {
+      this.map.set(coord.x, new Map());
     }
-    this.map.get(coord.blockX)!.set(coord.blockY, locstring);
-    this.rmap.set(locstring, { blockX: coord.blockX, blockY: coord.blockY });
+    this.map.get(coord.x)!.set(coord.y, locstring);
+    this.rmap.set(locstring, new BlockCoord(coord));
   }
 
-  getLocstring(coord: BlockXY): string | undefined {
-    return this.map.get(coord.blockX)?.get(coord.blockY);
+  getLocstring(coord: BlockCoord): string | undefined {
+    return this.map.get(coord.x)?.get(coord.y);
   }
 
-  getCoord(locstring: string): BlockXY | undefined {
+  getCoord(locstring: string): BlockCoord | undefined {
     const found = this.rmap.get(locstring);
 
     if (found) {
-      const { blockX, blockY } = found;
-      return { blockX, blockY }
+      return new BlockCoord(found);
     } else {
       return undefined;
     }
   }
 
-  hasCoord(coord: BlockXY): boolean {
-    return this.map.has(coord.blockX) && this.map.get(coord.blockX)!.has(coord.blockY);
+  hasCoord({ x, y }: BlockCoord): boolean {
+    return this.map.has(x) && this.map.get(x)!.has(y);
   }
 
   hasLocstring(locstring: string): boolean {
     return this.rmap.has(locstring);
   }
 
-  deleteInner(coord: BlockXY, locstring: string) {
+  deleteInner({ x, y }: BlockCoord, locstring: string) {
     this.rmap.delete(locstring);
-    this.map.get(coord.blockX)!.delete(coord.blockY);
-    if (this.map.get(coord.blockX)!.size === 0) {
-      this.map.delete(coord.blockX);
+    this.map.get(x)!.delete(y);
+    if (this.map.get(x)!.size === 0) {
+      this.map.delete(x);
     }
   }
 
-  deleteCoord(coord: BlockXY): boolean {
+  deleteCoord(coord: BlockCoord): boolean {
     const locstring = this.getLocstring(coord);
     if (locstring) {
       this.deleteInner(coord, locstring);

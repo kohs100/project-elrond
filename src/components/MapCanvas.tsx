@@ -1,18 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
 
 import {
-  AbsCoord,
-  AbsOffset,
-  type BlockXY,
+  BlockCoord,
+  ViewCoord,
+  ViewOffset,
   type ClientXY,
   CoordMap,
-  fromBlockCoord,
-  getBlockCoord,
   getCanvasOffset,
-  getClientCoord,
   getMidpoint,
   getTouchDistance,
   limitOffset,
+  BLOCKSIZE,
+  getCanvasSize,
 } from "../util/canvasUtil";
 
 import { type MapMetadata } from "../util/mapType";
@@ -29,7 +28,14 @@ interface Dictionary<T> {
   [Key: string]: T;
 }
 
-type MapBlock = BlockXY & { inside: string };
+type MapBlock = {
+  coord: BlockCoord;
+  inside: string;
+};
+type MapLabel = {
+  coord: BlockCoord;
+  blkid: string;
+};
 type Overlay = {
   locstring: string;
   is2sp: boolean;
@@ -44,17 +50,18 @@ function MapCanvas({ mapName }: MapCanvasProp) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [viewScale, setViewScale] = useState(1);
-  const [viewOffset, setViewOffset] = useState(new AbsOffset({ x: 0, y: 0 }));
+  const [viewOffset, setViewOffset] = useState(new ViewOffset({ x: 0, y: 0 }));
 
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingStarted, setIsDraggingStarted] = useState(false);
-  const [dragStart, setDragStart] = useState(new AbsCoord({ x: 0, y: 0 }));
+  const [dragStart, setDragStart] = useState(new ViewCoord({ x: 0, y: 0 }));
 
   const [lastTouchDistance, setLastTouchDistance] = useState(0);
 
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
-  const [mapblocks, setMapblocks] = useState<MapBlock[] | null>(null);
-  const [overlays, ] = useState<Overlay[]>([
+  const [mapblocks, setMapblocks] = useState<MapBlock[]>([]);
+  const [maplabels, setMaplabels] = useState<MapLabel[]>([]);
+  const [overlays] = useState<Overlay[]>([
     {
       locstring: "ヤ17",
       is2sp: false,
@@ -75,7 +82,8 @@ function MapCanvas({ mapName }: MapCanvasProp) {
 
   const setupMapmetadata = () => {
     const { blockDict, backgroundUrl } = mapNameDict[mapName];
-    const boothlist: MapBlock[] = [];
+    const mapblocks: MapBlock[] = [];
+    const maplabels: MapLabel[] = [];
     const newCoordDict: CoordMap = new CoordMap();
 
     if (backgroundUrl) {
@@ -85,36 +93,48 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     }
 
     Object.entries(blockDict).forEach(([blkid, blkmeta]) => {
+      const { blocks, maxNum, labelCoords } = blkmeta;
+      labelCoords.forEach((lcoord) => {
+        maplabels.push({
+          coord: new BlockCoord(lcoord),
+          blkid,
+        });
+      });
+
       let blknum = 1;
-      blkmeta.blocks.forEach((linmeta) => {
+      blocks.forEach((linmeta) => {
         const { origin, axis, dir, repr } = linmeta;
-        const ptr: BlockXY = { blockX: origin.blockX, blockY: origin.blockY };
+        const ptr: BlockCoord = new BlockCoord(origin);
 
         repr.arrData.forEach(({ n: nvalid, typ: ovltype }) => {
           for (let j = 0; j < nvalid; j++) {
             if (ovltype === "Y") {
               const locnum = blknum.toString().padStart(2, "0");
-              boothlist.push({ inside: locnum, ...ptr });
-              newCoordDict.set(ptr, `${blkid}${locnum}`);
+              mapblocks.push({
+                coord: new BlockCoord(ptr),
+                inside: locnum,
+              });
+              newCoordDict.set(new BlockCoord(ptr), `${blkid}${locnum}`);
               blknum += 1;
             } else if (ovltype === "F") {
               blknum += 1;
             }
             if (axis === "x") {
-              ptr.blockX += dir === "+" ? 1 : -1;
+              ptr.x += dir === "+" ? 1 : -1;
             } else {
-              ptr.blockY += dir === "+" ? 1 : -1;
+              ptr.y += dir === "+" ? 1 : -1;
             }
           }
         });
       });
-      if (blknum !== blkmeta.max_num + 1) {
+      if (blknum !== maxNum + 1) {
         console.log(
-          `blknum-blkmeta mismatch: ${blknum - 1} vs ${blkmeta.max_num} in ${blkid}`
+          `blknum-blkmeta mismatch: ${blknum - 1} vs ${maxNum} in ${blkid}`
         );
       }
     });
-    setMapblocks(boothlist);
+    setMapblocks(mapblocks);
+    setMaplabels(maplabels);
     setCoordDict(newCoordDict);
   };
 
@@ -142,16 +162,22 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     ctx.strokeStyle = "rgb(0, 0, 0)";
     ctx.lineWidth = 2;
 
-    if (mapblocks === null) return;
-    mapblocks.forEach((blockdata: MapBlock) => {
-      const { inside } = blockdata;
-      const { x, y } = fromBlockCoord(blockdata);
+    mapblocks.forEach(({ coord, inside }: MapBlock) => {
+      const { x, y } = coord.intoAbs();
+
       ctx.strokeStyle = "rgb(0, 0, 0)";
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, 20, 20);
+      ctx.strokeRect(x, y, BLOCKSIZE, BLOCKSIZE);
 
       ctx.fillStyle = "rgb(0, 0, 0)";
-      ctx.fillText(inside, x + 10, y + 10);
+      ctx.fillText(inside, x + BLOCKSIZE / 2, y + BLOCKSIZE / 2);
+    });
+
+    ctx.font = "bold 40px sans-serif";
+    maplabels.forEach(({ coord, blkid }: MapLabel) => {
+      const { x, y } = coord.intoAbs();
+      ctx.fillStyle = "black";
+      ctx.fillText(blkid, x + BLOCKSIZE, y + BLOCKSIZE);
     });
 
     if (coordDict === null) return;
@@ -162,17 +188,17 @@ function MapCanvas({ mapName }: MapCanvasProp) {
         console.log(`${locstring} not found!!`);
         return;
       }
-      const { x, y } = fromBlockCoord(coord);
+      const { x, y } = coord.intoAbs();
 
       ctx.fillStyle = color;
 
       if (is2sp) {
-        ctx.fillRect(x, y, 20, 20);
+        ctx.fillRect(x, y, BLOCKSIZE, BLOCKSIZE);
       } else {
         ctx.beginPath();
         ctx.moveTo(x, y);
-        ctx.lineTo(x + 20, y);
-        ctx.lineTo(x, y + 20);
+        ctx.lineTo(x + BLOCKSIZE, y);
+        ctx.lineTo(x, y + BLOCKSIZE);
         ctx.closePath();
         ctx.fill();
       }
@@ -183,37 +209,29 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     setIsDragging(false);
     setIsDraggingStarted(true);
 
-    const clientCoord = getClientCoord(clientxy);
+    const clientCoord = ViewCoord.fromClient(clientxy);
 
     setDragStart(clientCoord.subOffset(viewOffset));
   };
-  const handleMove = ({ clientX, clientY }: ClientXY) => {
-    const clientCoord = new AbsCoord({ x: clientX, y: clientY });
+  const handleMove = (clientxy: ClientXY) => {
+    const clientCoord = ViewCoord.fromClient(clientxy);
+    const diff = clientCoord.subOffset(viewOffset).sub(dragStart).l2norm();
 
-    const dx = clientX - viewOffset.x - dragStart.x;
-    const dy = clientY - viewOffset.y - dragStart.y;
-
-    if (isDraggingStarted && Math.sqrt(dx * dx + dy * dy) > 5) {
+    if (isDraggingStarted && diff > 5) {
       setIsDragging(true);
       const { size } = mapNameDict[mapName];
 
       const canvas = canvasRef.current;
       if (!canvas) return;
 
-      const offsetLimitX = canvas.width - size.blockX * 20 * viewScale;
-      const offsetLimitY = canvas.height - size.blockY * 20 * viewScale;
+      const viewSize = size.intoAbs().intoView(viewScale);
+      const offsetLimit = getCanvasSize(canvas).sub(viewSize);
 
       const dViewCoord = clientCoord.sub(dragStart);
-      setViewOffset(
-        limitOffset(
-          dViewCoord,
-          { x: offsetLimitX, y: offsetLimitY },
-          { x: 0, y: 0 }
-        )
-      );
+      setViewOffset(limitOffset(dViewCoord, offsetLimit, null));
     }
   };
-  const handleUp = ({ clientX, clientY }: ClientXY) => {
+  const handleUp = (clientxy: ClientXY) => {
     setIsDraggingStarted(false);
     if (!isDragging) {
       const canvas = canvasRef.current;
@@ -221,12 +239,12 @@ function MapCanvas({ mapName }: MapCanvasProp) {
 
       const canvasOffset = getCanvasOffset(canvas);
 
-      const clientCoord = new AbsCoord({ x: clientX, y: clientY });
-      const pixelCoord = clientCoord
+      const clientCoord = ViewCoord.fromClient(clientxy);
+      const blockCoord = clientCoord
         .subOffset(canvasOffset)
         .subOffset(viewOffset)
-        .scale(viewScale);
-      const blockCoord = getBlockCoord(pixelCoord);
+        .intoAbs(viewScale)
+        .intoBlk();
 
       if (coordDict === null) return;
       const locstring = coordDict.getLocstring(blockCoord);
@@ -237,28 +255,31 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     setIsDragging(false);
   };
 
-  function zoomCanvas(clientCoord: AbsCoord, zoom: number) {
+  function zoomCanvas(clientCoord: ViewCoord, zoom: number) {
     const nextScale = viewScale * zoom;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const { size } = mapNameDict[mapName];
+    const viewSize = size.intoAbs().intoView(viewScale);
 
-    const scaleLimitX = canvas.width / (size.blockX * 20);
-    const scaleLimitY = canvas.height / (size.blockY * 20);
+    const { x: limitX, y: limitY } = getCanvasSize(canvas).rawdivelem(
+      size.intoAbs()
+    );
 
-    const scaleLimit = Math.min(scaleLimitX, scaleLimitY);
+    const scaleLimit = Math.min(limitX, limitY);
     const newScale = nextScale > scaleLimit ? nextScale : scaleLimit;
 
     const newClientCoord = clientCoord
       .subOffset(getCanvasOffset(canvas))
       .subOffset(viewOffset)
-      .scale(viewScale)
-      .unscale(newScale);
-
+      .intoAbs(viewScale)
+      .intoView(newScale);
+    const newViewOffset = clientCoord.sub(newClientCoord);
+    const offsetLimit = getCanvasSize(canvas).sub(viewSize);
     setViewScale(newScale);
-    setViewOffset(clientCoord.sub(newClientCoord));
+    setViewOffset(limitOffset(newViewOffset, offsetLimit, null));
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -304,7 +325,7 @@ function MapCanvas({ mapName }: MapCanvasProp) {
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const zoom = e.deltaY < 0 ? 1.1 : 0.9;
-    zoomCanvas(getClientCoord(e), zoom);
+    zoomCanvas(ViewCoord.fromClient(e), zoom);
   };
 
   return (

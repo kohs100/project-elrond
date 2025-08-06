@@ -1,12 +1,13 @@
+import { BlockCoord, BlockOffset } from "../../util/canvasUtil";
 import { type MapMetadata, LinearRepr, buildColumn as rawBuildColumn } from "../../util/mapType";
 
 type COL_TYP = "54" | "66" | "62" | "48"
 
 const COL_TEMPLATE = {
-  "54": LinearRepr.fromStr("Y8 N1 Y6 N6 Y6 N1 Y7"),
-  "66": LinearRepr.fromStr("Y9 N1 Y8 N2 Y8 N1 Y8"),
-  "62": LinearRepr.fromStr("Y8 N1 Y8 N2 Y8 N1 Y7"),
-  "48": LinearRepr.fromStr("Y5 N1 Y7 N4 Y7 N1 Y5"),
+  "54": LinearRepr.fromStr("Y8 N1 Y6 N2 L2 N2 Y6 N1 Y7"),
+  "66": LinearRepr.fromStr("Y9 N1 Y8 L2 Y8 N1 Y8"),
+  "62": LinearRepr.fromStr("Y8 N1 Y8 L2 Y8 N1 Y7"),
+  "48": LinearRepr.fromStr("Y5 N1 Y7 N1 L2 N1 Y7 N1 Y5"),
 }
 
 function buildColumn(ctyp: COL_TYP, x: number, y: number) {
@@ -15,33 +16,31 @@ function buildColumn(ctyp: COL_TYP, x: number, y: number) {
 
 const metadata: MapMetadata = {
   backgroundUrl: "images/c106_day1_e456.png",
-  size: {
-    blockX: 117,
-    blockY: 44
-  },
+  size: new BlockOffset({ x: 117, y: 44 }),
   blockDict: {
     "ア": {
       blocks: [
         {
-          origin: { blockX: 116, blockY: 39 },
+          origin: new BlockCoord({ x: 116, y: 39 }),
           axis: "y",
           dir: "-",
           repr: LinearRepr.fromStr("Y3 F3 N5 Y4 N6 Y4 N2 Y1 N1 Y1 N1 Y1 N2 Y3")
         },
         {
-          origin: { blockX: 114, blockY: 1 },
+          origin: new BlockCoord({ x: 114, y: 1 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y2 N1 Y1 N1 Y2 N1 Y2 NB Y3 N1 Y2 N1 Y3 N1 Y2 N7 Y2 N1 Y3 N1 Y2 N2 Y3 N9 Y2 N1 Y3 N1 Y2 N6 Y2 N1 Y3 N1 Y2 N3 Y3 NA Y2 N1 Y3 N2 Y2")
         },
         {
-          origin: { blockX: 0, blockY: 3 },
+          origin: new BlockCoord({ x: 0, y: 3 }),
           axis: "y",
           dir: "+",
           repr: LinearRepr.fromStr("Y3 N2 Y1 N1 Y1 N1 Y1 N2 Y4 N6 Y4 N1 Y1 N1 Y1 N1 Y1 N2 Y3")
         }
       ],
-      max_num: 91
+      maxNum: 91,
+      labelCoords: []
     },
     "イ": buildColumn("54", 112, 39),
     "ウ": buildColumn("66", 109, 40),
