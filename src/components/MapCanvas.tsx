@@ -19,6 +19,13 @@ import d1_e456 from "./mapData/c106_day1_e456";
 import d1_w from "./mapData/c106_day1_w";
 import { supabase } from "../supabaseClient";
 
+import type { SingletonContextType } from "../hooks/useSupabaseAuth";
+import { useOutletContext } from "react-router-dom";
+import { QueryBuilder } from "../util/searchType";
+import { BoothTable } from "./BoothList";
+
+import "./MapCanvas.css";
+
 const mapNameDict: Dictionary<MapMetadata> = {
   d1_e456: d1_e456,
   d1_w: d1_w,
@@ -45,28 +52,39 @@ type Overlay = {
 
 type MapCanvasProp = {
   mapName: string;
+  renderImage?: boolean;
 };
 
-function MapCanvas({ mapName }: MapCanvasProp) {
-  const [touchCoord, setTouchCoord] = useState("");
+function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
-  const [mapblocks, setMapblocks] = useState<MapBlock[]>([]);
-  const [maplabels, setMaplabels] = useState<MapLabel[]>([]);
-  const [overlays, setOverlays] = useState<Overlay[]>([]);
+  const [mapblocks, setMapblocks] = useState<MapBlock[] | null>(null);
+  const [maplabels, setMaplabels] = useState<MapLabel[] | null>(null);
+  const [overlays, setOverlays] = useState<Overlay[] | null>(null);
+  const [mapmeta, setMapmeta] = useState<MapMetadata | null>(null);
+
+  const [boothIds, setBoothIds] = useState<number[]>([]);
+
+  const { singleton } = useOutletContext<SingletonContextType>();
 
   useEffect(() => {
+    console.log("Rendering MapCanvas");
     setupMapmetadata();
-    setupOverlays();
   }, []);
 
+  useEffect(() => {
+    setupOverlays();
+  }, [coordDict, mapmeta]);
+
   const setupMapmetadata = () => {
-    const { blockDict, backgroundUrl } = mapNameDict[mapName];
+    const mapmeta = mapNameDict[mapName];
     const mapblocks: MapBlock[] = [];
     const maplabels: MapLabel[] = [];
     const newCoordDict: CoordMap = new CoordMap();
 
-    if (backgroundUrl) {
+    const { blockDict, backgroundUrl } = mapmeta;
+
+    if (renderImage && backgroundUrl) {
       const img = new Image();
       img.src = backgroundUrl;
       img.onload = () => setImage(img);
@@ -116,24 +134,79 @@ function MapCanvas({ mapName }: MapCanvasProp) {
     setMapblocks(mapblocks);
     setMaplabels(maplabels);
     setCoordDict(newCoordDict);
+    setMapmeta(mapmeta);
   };
 
   const setupOverlays = async () => {
-    supabase.from("favorites").select("*")
-  }
+    if (coordDict === null || mapmeta === null) return;
+    const { data, error } = await supabase
+      .from("favorites")
+      .select(
+        `
+        user_id,
+        booth!inner(
+          id,
+          location_top,
+          location,
+          jname,
+          event_id
+        ),
+        color`
+      )
+      .eq("user_id", singleton.uid)
+      .eq("booth.location_top", mapmeta.location_top)
+      .eq("booth.event_id", mapmeta.event_id);
+
+    if (error) throw error;
+    if (data === null) throw new Error("Overlay lookup failed!!");
+
+    const overlays: Overlay[] = [];
+    data.forEach(({ booth, color }) => {
+      if (booth === null) return;
+      const { location } = booth;
+      const locstring = location.slice(0, 3);
+      const is2sp = locstring.length == 5;
+      const coord = coordDict!.getCoord(locstring)!;
+
+      overlays.push({ coord, is2sp, color, locstring });
+    });
+    setOverlays(overlays);
+  };
 
   const handleClick = (absCoord: AbsCoord) => {
     const blockCoord = absCoord.intoBlk();
     if (coordDict === null) return;
+    if (mapmeta === null) return;
+
     const locstring = coordDict.getLocstring(blockCoord);
     if (locstring) {
-      setTouchCoord(locstring);
+      const qb = new QueryBuilder();
+      qb.setHall(mapmeta.location_top);
+      qb.setBlk(locstring[0]);
+      const locnumstr = locstring.slice(1, 3);
+      qb.setNum(locnumstr);
+
+      qb.doSearch(mapmeta.event_id).then((booth_ids) => {
+        if (booth_ids === null) {
+          throw new Error(`Invalid query: ${qb}`);
+        }
+        setBoothIds(booth_ids);
+        console.log("Booth_IDS", booth_ids);
+      });
+    } else {
+      setBoothIds([]);
     }
   };
 
-  if (image)
+  if (mapblocks && maplabels && overlays)
     return (
-      <div style={{ width: "100vw", height: "80dvh" }}>
+      <div
+        style={{
+          width: "100vw",
+          height: "100dvh",
+          overflow: "hidden",
+        }}
+      >
         <MapCanvasInner
           mapName={mapName}
           image={image}
@@ -142,15 +215,22 @@ function MapCanvas({ mapName }: MapCanvasProp) {
           overlays={overlays}
           handleClick={handleClick}
         />
-        : <></>
-        <h2>{touchCoord}</h2>
+        {boothIds.length > 0 ? (
+          <div className="map-modal-bg" onClick={() => setBoothIds([])}>
+            <div className="map-modal-dialog-box">
+              <BoothTable boothIds={boothIds} />
+            </div>
+          </div>
+        ) : (
+          <></>
+        )}
       </div>
     );
 }
 
 type MapCanvasInnerProp = {
   mapName: string;
-  image: HTMLImageElement;
+  image: HTMLImageElement | null;
   mapblocks: MapBlock[];
   maplabels: MapLabel[];
   overlays: Overlay[];
@@ -239,7 +319,7 @@ function MapCanvasInner({
         ctx.fill();
       }
     });
-  }, [image, viewScale, viewOffset, mapblocks, overlays]);
+  }, [viewScale, viewOffset]);
 
   const handleDown = (clientxy: ClientXY) => {
     setIsDragging(false);
@@ -363,12 +443,10 @@ function MapCanvasInner({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onWheel={handleWheel}
-      style={{ width: "100%", height: "100%", touchAction: "none" }}
       className="map-canvas"
     />
   );

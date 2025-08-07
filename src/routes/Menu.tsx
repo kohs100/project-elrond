@@ -1,30 +1,13 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
-import type { User } from "@supabase/supabase-js";
+import { useNavigate, useOutletContext } from "react-router-dom";
+import { type SingletonContextType } from "../hooks/useSupabaseAuth";
 
 const MainMenu = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { singleton } = useOutletContext<SingletonContextType>();
 
-  const fetchUser = async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      throw error;
-    }
-
-    const { user } = data;
-    setUser(user);
-  };
-
-  useEffect(() => {
-    fetchUser();
-  }, []);
-
-  return user ? (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+  return <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md text-center">
-        <h2 className="text-2xl font-bold mb-6">메인 메뉴</h2>
+        <h2 className="text-2xl font-bold mb-6">Hello, {singleton.name}!</h2>
         <div className="flex flex-col gap-4">
           <button
             onClick={() => navigate("/search")}
@@ -51,17 +34,27 @@ const MainMenu = () => {
             1일차 동관
           </button>
           <button
+            onClick={() => navigate("/reset-password")}
+            className="bg-green-500 text-white py-2 rounded hover:bg-green-600"
+          >
+            이름 변경
+          </button>
+          <button
             onClick={() => navigate("/logout")}
             className="bg-red-500 text-white py-2 rounded hover:bg-red-600 mt-6"
           >
             로그아웃
           </button>
+          <button
+            onClick={() => navigate("/reset-password")}
+            className="bg-red-500 text-white py-2 rounded hover:bg-red-600 mt-6"
+          >
+            비밀번호 재설정
+          </button>
+
         </div>
       </div>
     </div>
-  ) : (
-    <></>
-  );
 };
 
 export default MainMenu;

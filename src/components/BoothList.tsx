@@ -6,31 +6,31 @@ import type { Database } from "../database.types";
 import "./BoothList.css";
 
 type BoothRow = Database["public"]["Tables"]["booth"]["Row"];
-type BoothEntryProp = { booth_id: number; markcolor?: string };
-type BoothListProp = { booth_ids: number[] };
+
 
 const URL_CF_R2 = "https://elrond.ster.email";
 
-export function BoothEntry({ booth_id, markcolor = "red" }: BoothEntryProp) {
+type BoothEntryProp = { boothId: number; markcolor?: string };
+export function BoothEntry({ boothId, markcolor = "red" }: BoothEntryProp) {
   const [data, setData] = useState<BoothRow | null>(null);
 
   const fetchData = async () => {
     const { data, error } = await supabase
       .from("booth")
       .select("*")
-      .eq("id", booth_id);
+      .eq("id", boothId);
     if (error) {
       throw error;
     }
     if (data) {
       if (data.length > 1) {
-        throw new Error(`Assertion failed: Too many data in booth_id: ${booth_id}`);
+        throw new Error(`Assertion failed: Too many data in booth_id: ${boothId}`);
       } else if (data.length === 0) {
-        throw new Error(`Assertion failed: No data in booth_id: ${booth_id}`);
+        throw new Error(`Assertion failed: No data in booth_id: ${boothId}`);
       }
       setData(data[0]);
     } else {
-      throw new Error(`Failed to query booth_id: ${booth_id}`);
+      throw new Error(`Failed to query booth_id: ${boothId}`);
     }
   };
 
@@ -118,17 +118,17 @@ export function BoothEntry({ booth_id, markcolor = "red" }: BoothEntryProp) {
   );
 }
 
-export const BoothTable: React.FC<BoothListProp> = (props) => {
-  const { booth_ids } = props;
+type BoothTableProp = { boothIds: number[] };
+export function BoothTable({boothIds}: BoothTableProp) {
 
   return (
     <div className="booth-table">
-      {booth_ids.map((booth_id) => (
+      {boothIds.map((boothId) => (
         <div
-          key={booth_id}
+          key={boothId}
           className="booth-table-entry"
         >
-          <BoothEntry booth_id={booth_id} />
+          <BoothEntry boothId={boothId} />
         </div>
       ))}
     </div>

@@ -144,19 +144,19 @@ export type Database = {
           booth_id: number
           color: string
           created_at: string
-          user_id: number
+          user_id: string
         }
         Insert: {
           booth_id: number
           color: string
           created_at?: string
-          user_id: number
+          user_id: string
         }
         Update: {
           booth_id?: number
           color?: string
           created_at?: string
-          user_id?: number
+          user_id?: string
         }
         Relationships: [
           {
@@ -204,88 +204,23 @@ export type Database = {
           },
         ]
       }
-      team: {
-        Row: {
-          created_at: string
-          event_id: number | null
-          id: number
-          name: string
-        }
-        Insert: {
-          created_at?: string
-          event_id?: number | null
-          id?: number
-          name: string
-        }
-        Update: {
-          created_at?: string
-          event_id?: number | null
-          id?: number
-          name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "event"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user: {
         Row: {
           created_at: string
-          id: number
+          id: string
           name: string
-          uuid: string | null
         }
         Insert: {
           created_at?: string
-          id?: number
+          id?: string
           name: string
-          uuid?: string | null
         }
         Update: {
           created_at?: string
-          id?: number
+          id?: string
           name?: string
-          uuid?: string | null
         }
         Relationships: []
-      }
-      user_team: {
-        Row: {
-          created_at: string
-          team_id: number
-          user_id: number
-        }
-        Insert: {
-          created_at?: string
-          team_id: number
-          user_id: number
-        }
-        Update: {
-          created_at?: string
-          team_id?: number
-          user_id?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_team_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "team"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_team_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "user"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {

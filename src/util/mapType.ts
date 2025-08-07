@@ -122,5 +122,7 @@ export function buildColumn(rightRepr: LinearRepr, x: number, y: number): BlockM
 export type MapMetadata = {
   backgroundUrl?: string,
   size: BlockOffset,
-  blockDict: Dictionary<BlockMeta>
+  blockDict: Dictionary<BlockMeta>,
+  event_id: number,
+  location_top: string,
 }

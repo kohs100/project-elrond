@@ -17,6 +17,8 @@ function buildColumn(ctyp: COL_TYP, x: number, y: number) {
 const metadata: MapMetadata = {
   backgroundUrl: "images/c106_day1_e456.png",
   size: new BlockOffset({ x: 117, y: 44 }),
+  event_id: 1,
+  location_top: "東",
   blockDict: {
     "ア": {
       blocks: [

@@ -1,63 +1,88 @@
 import { supabase } from "../supabaseClient";
 
-export const ALL_FW_ALPHABETS = [
-  "Ａ","Ｂ","Ｃ","Ｄ","Ｅ","Ｆ","Ｇ","Ｈ","Ｉ","Ｊ","Ｋ","Ｌ","Ｍ",
-  "Ｎ","Ｏ","Ｐ","Ｑ","Ｒ","Ｓ","Ｔ","Ｕ","Ｖ","Ｗ","Ｘ","Ｙ","Ｚ",
-  "ａ","ｂ","ｃ","ｄ","ｅ","ｆ","ｇ","ｈ","ｉ","ｊ","ｋ","ｌ","ｍ",
-  "ｎ","ｏ","ｐ","ｑ","ｒ","ｓ","ｔ","ｕ","ｖ","ｗ","ｘ","ｙ","ｚ",
-] as const;
 
+export const ALL_FW_UPPER = [
+  "Ａ", "Ｂ", "Ｃ", "Ｄ", "Ｅ", "Ｆ", "Ｇ", "Ｈ", "Ｉ", "Ｊ", "Ｋ", "Ｌ", "Ｍ",
+  "Ｎ", "Ｏ", "Ｐ", "Ｑ", "Ｒ", "Ｓ", "Ｔ", "Ｕ", "Ｖ", "Ｗ", "Ｘ", "Ｙ", "Ｚ",
+] as const;
+export const ALL_FW_LOWER = [
+  "ａ", "ｂ", "ｃ", "ｄ", "ｅ", "ｆ", "ｇ", "ｈ", "ｉ", "ｊ", "ｋ", "ｌ", "ｍ",
+  "ｎ", "ｏ", "ｐ", "ｑ", "ｒ", "ｓ", "ｔ", "ｕ", "ｖ", "ｗ", "ｘ", "ｙ", "ｚ",
+] as const;
+export const ALL_FW_ALPHABETS = [...ALL_FW_UPPER, ...ALL_FW_LOWER] as const;
 export const ALL_HIRAGANA = [
-  "ぁ","あ","ぃ","い","ぅ","う","ぇ","え","ぉ","お",
-  "か","が","き","ぎ","く","ぐ","け","げ","こ","ご",
-  "さ","ざ","し","じ","す","ず","せ","ぜ","そ","ぞ",
-  "た","だ","ち","ぢ","っ","つ","づ","て","で","と","ど",
-  "な","に","ぬ","ね","の",
-  "は","ば","ぱ","ひ","び","ぴ","ふ","ぶ","ぷ","へ","べ","ぺ","ほ","ぼ","ぽ",
-  "ま","み","む","め","も",
-  "ゃ","や","ゅ","ゆ","ょ","よ",
-  "ら","り","る","れ","ろ",
-  "ゎ","わ","ゐ","ゑ","を","ん"
+  "ぁ", "あ", "ぃ", "い", "ぅ", "う", "ぇ", "え", "ぉ", "お",
+  "か", "が", "き", "ぎ", "く", "ぐ", "け", "げ", "こ", "ご",
+  "さ", "ざ", "し", "じ", "す", "ず", "せ", "ぜ", "そ", "ぞ",
+  "た", "だ", "ち", "ぢ", "っ", "つ", "づ", "て", "で", "と", "ど",
+  "な", "に", "ぬ", "ね", "の",
+  "は", "ば", "ぱ", "ひ", "び", "ぴ", "ふ", "ぶ", "ぷ", "へ", "べ", "ぺ", "ほ", "ぼ", "ぽ",
+  "ま", "み", "む", "め", "も",
+  "ゃ", "や", "ゅ", "ゆ", "ょ", "よ",
+  "ら", "り", "る", "れ", "ろ",
+  "ゎ", "わ", "ゐ", "ゑ", "を", "ん"
 ] as const;
 export const ALL_KATAKANA = [
-  "ァ","ア","ィ","イ","ゥ","ウ","ェ","エ","ォ","オ",
-  "カ","ガ","キ","ギ","ク","グ","ケ","ゲ","コ","ゴ",
-  "サ","ザ","シ","ジ","ス","ズ","セ","ゼ","ソ","ゾ",
-  "タ","ダ","チ","ヂ","ッ","ツ","ヅ","テ","デ","ト","ド",
-  "ナ","ニ","ヌ","ネ","ノ",
-  "ハ","バ","パ","ヒ","ビ","ピ","フ","ブ","プ","ヘ","ベ","ペ","ホ","ボ","ポ",
-  "マ","ミ","ム","メ","モ",
-  "ャ","ヤ","ュ","ユ","ョ","ヨ",
-  "ラ","リ","ル","レ","ロ",
-  "ヮ","ワ","ヰ","ヱ","ヲ","ン",
-  "ヴ","ヵ","ヶ"
+  "ァ", "ア", "ィ", "イ", "ゥ", "ウ", "ェ", "エ", "ォ", "オ",
+  "カ", "ガ", "キ", "ギ", "ク", "グ", "ケ", "ゲ", "コ", "ゴ",
+  "サ", "ザ", "シ", "ジ", "ス", "ズ", "セ", "ゼ", "ソ", "ゾ",
+  "タ", "ダ", "チ", "ヂ", "ッ", "ツ", "ヅ", "テ", "デ", "ト", "ド",
+  "ナ", "ニ", "ヌ", "ネ", "ノ",
+  "ハ", "バ", "パ", "ヒ", "ビ", "ピ", "フ", "ブ", "プ", "ヘ", "ベ", "ペ", "ホ", "ボ", "ポ",
+  "マ", "ミ", "ム", "メ", "モ",
+  "ャ", "ヤ", "ュ", "ユ", "ョ", "ヨ",
+  "ラ", "リ", "ル", "レ", "ロ",
+  "ヮ", "ワ", "ヰ", "ヱ", "ヲ", "ン",
+  "ヴ", "ヵ", "ヶ"
 ] as const;
 export const ALL_BLOCKIDS = [...ALL_FW_ALPHABETS, ...ALL_HIRAGANA, ...ALL_KATAKANA] as const;
 
+export type FullwidthLower = typeof ALL_FW_LOWER[number];
+export type FullwidthUpper = typeof ALL_FW_UPPER[number];
+export type Fullwidth = typeof ALL_FW_ALPHABETS[number];
+
 export type Hiragana = typeof ALL_HIRAGANA[number];
 export type Katakana = typeof ALL_KATAKANA[number];
-export type Fullwidth = typeof ALL_FW_ALPHABETS[number];
 
 export type BlockID = Hiragana | Katakana | Fullwidth
 export type Subsec = 'a' | 'b' | 'ab';
 
 interface Dictionary<V> {
-    [Key: string]: V;
+  [Key: string]: V;
 }
 
+export function isFullwidthLower(ch: string): ch is FullwidthLower {
+  if (ch.length !== 1) throw new Error(`${ch} is not a character`)
+  return ALL_FW_LOWER.includes(ch as FullwidthLower);
+}
+export function isFullwidthUpper(ch: string): ch is FullwidthUpper {
+  if (ch.length !== 1) throw new Error(`${ch} is not a character`)
+  return ALL_FW_UPPER.includes(ch as FullwidthUpper);
+}
 export function isFullwidthAlpha(ch: string): ch is Fullwidth {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
   return ALL_FW_ALPHABETS.includes(ch as Fullwidth);
 }
+
+export function isHiragana(ch: string): ch is Hiragana {
+  if (ch.length !== 1) throw new Error(`${ch} is not a character`)
+  return ALL_HIRAGANA.includes(ch as Hiragana);
+}
+export function isKatakana(ch: string): ch is Katakana {
+  if (ch.length !== 1) throw new Error(`${ch} is not a character`)
+  return ALL_KATAKANA.includes(ch as Katakana);
+}
+
 export function isBlockID(ch: string): ch is BlockID {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
   return ALL_BLOCKIDS.includes(ch as BlockID);
 }
-export function toFullwidthAlpha(ch: string): Fullwidth {
+
+export function toBlockID(ch: string): BlockID {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
   ch.replace(/[A-Za-z]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0));
-  if (isFullwidthAlpha(ch)) return ch;
-  else throw new Error(`${ch} is not a character`)
+  if (isBlockID(ch)) return ch;
+  else throw new Error(`${ch} is not a valid blockid`)
 }
 
 export const KR2JP: Dictionary<(Hiragana | Katakana)[]> = {
@@ -155,15 +180,15 @@ export class QueryBuilder {
   }
 
   setBlk(qlocblk: string) {
-    const locblk = toFullwidthAlpha(qlocblk);
+    const locblk = toBlockID(qlocblk);
 
-    if (/[あーん]/.test(locblk)) {
+    if (isHiragana(locblk)) {
       this.intersectHall(["西"]);
       this.intersectBlk([locblk]);
-    } else if (/[アーンＡ-Ｚ]/.test(locblk)) {
+    } else if (isKatakana(locblk) || isFullwidthUpper(locblk)) {
       this.intersectHall(["東"]);
       this.intersectBlk([locblk]);
-    } else if (/[ａ-ｚ]/.test(locblk)) {
+    } else if (isFullwidthLower(locblk)) {
       this.intersectHall(["南"]);
       this.intersectBlk([locblk]);
     } else if (locblk in KR2JP) {
@@ -196,7 +221,7 @@ export class QueryBuilder {
     }
   }
 
-  doSearch: (day: number) => Promise<null | number[]> = async (day) => {
+  doSearch: (event_id: number) => Promise<null | number[]> = async (event_id) => {
     const location_lst: string[] = [];
     if (
       this.hall.size === 0 ||
@@ -216,13 +241,12 @@ export class QueryBuilder {
     const { data, error } = await supabase
       .from("booth")
       .select("id")
-      .eq("event_id", day)
+      .eq("event_id", event_id)
       .in("location_top", Array.from(this.hall))
       .in("location", location_lst);
     if (error) {
       throw error;
     }
-    console.log(`found: ${data}`);
     return data.map((obj) => obj.id);
   };
 }

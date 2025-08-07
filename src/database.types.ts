@@ -13,13 +13,6 @@ export type Database = MergeDeep<
           }
         }
       }
-      Views: {
-        your_view: {
-          Row: {
-            data: Circle
-          }
-        }
-      }
     }
   }
 >
