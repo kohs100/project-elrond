@@ -218,7 +218,7 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
         {boothIds.length > 0 ? (
           <div className="map-modal-bg" onClick={() => setBoothIds([])}>
             <div className="map-modal-dialog-box">
-              <BoothTable boothIds={boothIds} />
+              <BoothTable boothIds={boothIds} scrollable={false}/>
             </div>
           </div>
         ) : (

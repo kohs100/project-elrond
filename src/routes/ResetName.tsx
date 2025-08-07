@@ -23,7 +23,7 @@ export default function ResetName() {
       setMessage(error.message);
     } else {
       setMessage("✅ 이름이 성공적으로 변경되었습니다!");
-      setTimeout(() => navigate("/"), 2000);
+      setTimeout(() => navigate("/"), 500);
     }
     setLoading(false);
   };

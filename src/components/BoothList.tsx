@@ -7,24 +7,51 @@ import "./BoothList.css";
 
 type BoothRow = Database["public"]["Tables"]["booth"]["Row"];
 
+import type { SingletonContextType } from "../hooks/useSupabaseAuth";
+import { useOutletContext } from "react-router-dom";
+import type { MergeDeep } from "type-fest";
 
 const URL_CF_R2 = "https://elrond.ster.email";
 
-type BoothEntryProp = { boothId: number; markcolor?: string };
-export function BoothEntry({ boothId, markcolor = "red" }: BoothEntryProp) {
-  const [data, setData] = useState<BoothRow | null>(null);
+type FavBoothRow = MergeDeep<
+  BoothRow,
+  {
+    favorites: {
+      booth_id: number;
+      user_id: string;
+      color: string;
+    }[];
+  }
+>;
+
+type BoothEntryProp = { boothId: number };
+export function BoothEntry({ boothId }: BoothEntryProp) {
+  const [data, setData] = useState<FavBoothRow | null>(null);
+  const { singleton } = useOutletContext<SingletonContextType>();
 
   const fetchData = async () => {
     const { data, error } = await supabase
       .from("booth")
-      .select("*")
-      .eq("id", boothId);
+      .select(
+        `
+        *,
+        favorites(
+          booth_id,
+          user_id,
+          color
+        )
+        `
+      )
+      .eq("id", boothId)
+      .eq("favorites.user_id", singleton.uid);
     if (error) {
       throw error;
     }
     if (data) {
       if (data.length > 1) {
-        throw new Error(`Assertion failed: Too many data in booth_id: ${boothId}`);
+        throw new Error(
+          `Assertion failed: Too many data in booth_id: ${boothId}`
+        );
       } else if (data.length === 0) {
         throw new Error(`Assertion failed: No data in booth_id: ${boothId}`);
       }
@@ -57,7 +84,10 @@ export function BoothEntry({ boothId, markcolor = "red" }: BoothEntryProp) {
     }
     if (data.circle_id !== 0) {
       urls.push(
-        <a key="url-circle" href={`https://portal.circle.ms/Circle/Index/${data.circle_id}`}>
+        <a
+          key="url-circle"
+          href={`https://portal.circle.ms/Circle/Index/${data.circle_id}`}
+        >
           CMS
         </a>
       );
@@ -89,16 +119,19 @@ export function BoothEntry({ boothId, markcolor = "red" }: BoothEntryProp) {
           src={
             data.data.CircleCutUrls.length > 0
               ? `${URL_CF_R2}${data.data.CircleCutUrls[0]}`
-              :
-            "/images/circle_placeholder.jpg"
+              : "/images/circle_placeholder.jpg"
           }
         />
-        <div
-          className="booth-img-after"
-          style={{
-            backgroundColor: markcolor,
-          }}
-        />
+        {data.favorites.length > 0 ? (
+          <div
+            className="booth-img-after"
+            style={{
+              backgroundColor: data.favorites[0].color,
+            }}
+          />
+        ) : (
+          <></>
+        )}
       </div>
 
       <div
@@ -118,19 +151,17 @@ export function BoothEntry({ boothId, markcolor = "red" }: BoothEntryProp) {
   );
 }
 
-type BoothTableProp = { boothIds: number[] };
-export function BoothTable({boothIds}: BoothTableProp) {
-
+type BoothTableProp = { boothIds: number[], scrollable: boolean };
+export function BoothTable({ boothIds, scrollable }: BoothTableProp) {
   return (
-    <div className="booth-table">
+    <div className="booth-table" style={{
+      overflowY: scrollable ? "scroll" : "hidden"
+    }}>
       {boothIds.map((boothId) => (
-        <div
-          key={boothId}
-          className="booth-table-entry"
-        >
+        <div key={boothId} className="booth-table-entry">
           <BoothEntry boothId={boothId} />
         </div>
       ))}
     </div>
   );
-};
+}

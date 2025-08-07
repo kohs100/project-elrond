@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -7,6 +7,12 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/");
+    });
+  }, []);
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,16 +24,6 @@ export default function Login() {
       setMessage(error.message);
     } else {
       // 로그인 성공
-      const user = data.user;
-      const { error: upsertError } = await supabase.from("user").upsert([
-        {
-          uuid: user.id,
-          name: user.email?.split("@")[0] || "NOEMAIL",
-        },
-      ]);
-      if (upsertError) {
-        throw upsertError;
-      }
       navigate("/");
     }
   };

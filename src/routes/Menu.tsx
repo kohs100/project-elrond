@@ -34,7 +34,7 @@ const MainMenu = () => {
             1일차 동관
           </button>
           <button
-            onClick={() => navigate("/reset-password")}
+            onClick={() => navigate("/reset-name")}
             className="bg-green-500 text-white py-2 rounded hover:bg-green-600"
           >
             이름 변경

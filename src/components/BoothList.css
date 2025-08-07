@@ -38,7 +38,7 @@
   flex-wrap: wrap;
   gap: 5px;
   justify-content: center;
-  overflow-y: scroll;
+  overflow-x: hidden;
   border: 1px solid red;
   min-width: 330px;
   height: 100%;

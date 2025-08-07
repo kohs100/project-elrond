@@ -112,7 +112,7 @@ const Search = () => {
         <SearchBar boothIds={boothIds} setBoothIds={setBoothIds} />
       </div>
       <div style={{ width: "100vw", height: "80dvh", overflow: "hidden" }}>
-        <BoothTable booth_ids={boothIds} />
+        <BoothTable boothIds={boothIds} scrollable={true} />
       </div>
     </div>
   );
