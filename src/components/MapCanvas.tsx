@@ -20,6 +20,11 @@ import d1_w from "./mapData/c106_day1_w";
 import d1_s from "./mapData/c106_day1_s";
 import d1_e7 from "./mapData/c106_day1_e7";
 
+import d2_e456 from "./mapData/c106_day2_e456";
+import d2_w from "./mapData/c106_day2_w";
+import d2_s from "./mapData/c106_day2_s";
+import d2_e7 from "./mapData/c106_day2_e7";
+
 import { supabase } from "../supabaseClient";
 
 import type { SingletonContextType } from "../hooks/useSupabaseAuth";
@@ -34,6 +39,10 @@ const mapNameDict: Dictionary<MapMetadata> = {
   d1_e7,
   d1_w,
   d1_s,
+  d2_e456,
+  d2_e7,
+  d2_w,
+  d2_s,
 };
 
 interface Dictionary<T> {
