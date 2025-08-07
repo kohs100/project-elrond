@@ -17,6 +17,9 @@ import { type MapMetadata } from "../util/mapType";
 
 import d1_e456 from "./mapData/c106_day1_e456";
 import d1_w from "./mapData/c106_day1_w";
+import d1_s from "./mapData/c106_day1_s";
+import d1_e7 from "./mapData/c106_day1_e7";
+
 import { supabase } from "../supabaseClient";
 
 import type { SingletonContextType } from "../hooks/useSupabaseAuth";
@@ -27,8 +30,10 @@ import { BoothTable } from "./BoothList";
 import "./MapCanvas.css";
 
 const mapNameDict: Dictionary<MapMetadata> = {
-  d1_e456: d1_e456,
-  d1_w: d1_w,
+  d1_e456,
+  d1_e7,
+  d1_w,
+  d1_s,
 };
 
 interface Dictionary<T> {
@@ -55,7 +60,7 @@ type MapCanvasProp = {
   renderImage?: boolean;
 };
 
-function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
+function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
   const [mapblocks, setMapblocks] = useState<MapBlock[] | null>(null);
