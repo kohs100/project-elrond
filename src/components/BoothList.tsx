@@ -24,9 +24,10 @@ type FavBoothRow = MergeDeep<
   }
 >;
 
-type BoothEntryProp = { boothId: number };
-export function BoothEntry({ boothId }: BoothEntryProp) {
+type BoothEntryProp = { boothId: number; isTouch: boolean };
+export function BoothEntry({ boothId, isTouch }: BoothEntryProp) {
   const [data, setData] = useState<FavBoothRow | null>(null);
+  const [color, setColor] = useState<string | null> (null);
   const { singleton } = useOutletContext<SingletonContextType>();
 
   const fetchData = async () => {
@@ -48,12 +49,19 @@ export function BoothEntry({ boothId }: BoothEntryProp) {
       throw error;
     }
     if (data) {
-      if (data.length > 1) {
+      if (data.length > 1)
         throw new Error(
           `Assertion failed: Too many data in booth_id: ${boothId}`
         );
-      } else if (data.length === 0) {
+      else if (data.length === 0)
         throw new Error(`Assertion failed: No data in booth_id: ${boothId}`);
+
+      if (data[0].favorites.length > 1)
+        throw new Error(
+          `Assertion failed: Too many favorites of booth_id: ${boothId}`
+        );
+      else if (data[0].favorites.length == 1) {
+        setColor(data[0].favorites[0].color);
       }
       setData(data[0]);
     } else {
@@ -104,6 +112,59 @@ export function BoothEntry({ boothId }: BoothEntryProp) {
     return result;
   };
 
+  const handleClick = async (_: React.MouseEvent, newcolor: null | string) => {
+    console.log(`${color} -> ${newcolor}`);
+    if (color != newcolor) {
+      if (newcolor === null) {
+        await supabase.from("favorites")
+          .delete()
+          .eq('user_id', singleton.uid)
+          .eq('booth_id', boothId)
+      }
+      else {
+        await supabase.from("favorites").upsert({
+          user_id: singleton.uid,
+          booth_id: boothId,
+          color: newcolor
+        })
+      }
+      setColor(newcolor);
+    }
+  };
+
+  const generatedColors = [
+    "red",
+    "blue",
+    "orange",
+    "purple",
+    "yellow",
+    "aqua",
+    "green",
+    null,
+  ].map((color, idx) => {
+    if (color === null) {
+      return (
+        <div
+          style={{ color: "red" }}
+          className="booth-info-colorbar-elem"
+          key={`favorite-color-${idx}`}
+          onClick={(e) => handleClick(e, color)}
+        >
+          ❌
+        </div>
+      );
+    } else {
+      return (
+        <div
+          style={{ backgroundColor: color }}
+          className="booth-info-colorbar-elem"
+          key={`favorite-color-${idx}`}
+          onClick={(e) => handleClick(e, color)}
+        ></div>
+      );
+    }
+  });
+
   return data ? (
     <div className="booth-box">
       <div className="booth-img">
@@ -122,11 +183,11 @@ export function BoothEntry({ boothId }: BoothEntryProp) {
               : "/images/circle_placeholder.jpg"
           }
         />
-        {data.favorites.length > 0 ? (
+        {color ? (
           <div
             className="booth-img-after"
             style={{
-              backgroundColor: data.favorites[0].color,
+              backgroundColor: color,
             }}
           />
         ) : (
@@ -134,16 +195,13 @@ export function BoothEntry({ boothId }: BoothEntryProp) {
         )}
       </div>
 
-      <div
-        className="booth-txt"
-        style={{
-          verticalAlign: "top",
-          display: "inline-block",
-        }}
-      >
-        <p>{data.jname}</p>
-        <p>{data.location_top + data.location}</p>
-        <p>{generateURLs(data)}</p>
+      <div className="booth-info-container">
+        <div className="booth-info-text">
+          <p>{data.jname}</p>
+          <p>{data.location_top + data.location}</p>
+          <p>{generateURLs(data)}</p>
+        </div>
+        <div className="booth-info-colorbar">{generatedColors}</div>
       </div>
     </div>
   ) : (
@@ -151,15 +209,22 @@ export function BoothEntry({ boothId }: BoothEntryProp) {
   );
 }
 
-type BoothTableProp = { boothIds: number[], scrollable: boolean };
-export function BoothTable({ boothIds, scrollable }: BoothTableProp) {
+type BoothTableProp = {
+  boothIds: number[];
+  scrollable: boolean;
+  isTouch: boolean;
+};
+export function BoothTable({ boothIds, scrollable, isTouch }: BoothTableProp) {
   return (
-    <div className="booth-table" style={{
-      overflowY: scrollable ? "scroll" : "hidden"
-    }}>
+    <div
+      className="booth-table"
+      style={{
+        overflowY: scrollable ? "scroll" : "hidden",
+      }}
+    >
       {boothIds.map((boothId) => (
         <div key={boothId} className="booth-table-entry">
-          <BoothEntry boothId={boothId} />
+          <BoothEntry boothId={boothId} isTouch={isTouch} />
         </div>
       ))}
     </div>

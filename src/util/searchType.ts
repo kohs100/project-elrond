@@ -35,7 +35,24 @@ export const ALL_KATAKANA = [
   "ヮ", "ワ", "ヰ", "ヱ", "ヲ", "ン",
   "ヴ", "ヵ", "ヶ"
 ] as const;
-export const ALL_BLOCKIDS = [...ALL_FW_ALPHABETS, ...ALL_HIRAGANA, ...ALL_KATAKANA] as const;
+export const ALL_HATUON = [
+  "아", "이", "우", "에", "오",
+  "카", "키", "쿠", "케", "코",
+  "사", "시", "스", "세", "소",
+  "타", "치", "츠", "테", "토",
+  "나", "니", "누", "네", "노",
+  "하", "히", "후", "헤", "호",
+  "마", "미", "무", "메", "모",
+  "야", "유", "요",
+  "라", "리", "루", "레", "로",
+  "와", "응",
+] as const;
+export const ALL_BLOCKIDS = [
+  ...ALL_FW_ALPHABETS,
+  ...ALL_HIRAGANA,
+  ...ALL_KATAKANA,
+  ...ALL_HATUON
+] as const;
 
 export type FullwidthLower = typeof ALL_FW_LOWER[number];
 export type FullwidthUpper = typeof ALL_FW_UPPER[number];
@@ -44,12 +61,11 @@ export type Fullwidth = typeof ALL_FW_ALPHABETS[number];
 export type Hiragana = typeof ALL_HIRAGANA[number];
 export type Katakana = typeof ALL_KATAKANA[number];
 
-export type BlockID = Hiragana | Katakana | Fullwidth
-export type Subsec = 'a' | 'b' | 'ab';
+export type Hatuon = typeof ALL_HATUON[number];
 
-interface Dictionary<V> {
-  [Key: string]: V;
-}
+export type BlockID = Hiragana | Katakana | Fullwidth | Hatuon;
+
+export type Subsec = 'a' | 'b' | 'ab';
 
 export function isFullwidthLower(ch: string): ch is FullwidthLower {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
@@ -72,6 +88,10 @@ export function isKatakana(ch: string): ch is Katakana {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
   return ALL_KATAKANA.includes(ch as Katakana);
 }
+export function isHatuon(ch: string): ch is Hatuon {
+  if (ch.length !== 1) throw new Error(`${ch} is not a character`)
+  return ALL_HATUON.includes(ch as Hatuon);
+}
 
 export function isBlockID(ch: string): ch is BlockID {
   if (ch.length !== 1) throw new Error(`${ch} is not a character`)
@@ -85,62 +105,63 @@ export function toBlockID(ch: string): BlockID {
   else throw new Error(`${ch} is not a valid blockid`)
 }
 
-export const KR2JP: Dictionary<(Hiragana | Katakana)[]> = {
-  "아": ["あ", "ア"],
-  "이": ["い", "イ"],
-  "우": ["う", "ウ"],
-  "에": ["え", "エ"],
-  "오": ["お", "を", "オ", "ヲ"],
+export const HatuonToKana: Map<Hatuon, (Hiragana|Katakana)[]> = new Map([
+  ["아", ["あ", "ア"]],
+  ["이", ["い", "イ"]],
+  ["우", ["う", "ウ"]],
+  ["에", ["え", "エ"]],
+  ["오", ["お", "を", "オ", "ヲ"]],
 
-  "카": ["か", "カ"],
-  "키": ["き", "キ"],
-  "쿠": ["く", "ク"],
-  "케": ["け", "ケ"],
-  "코": ["こ", "コ"],
+  ["카", ["か", "カ"]],
+  ["키", ["き", "キ"]],
+  ["쿠", ["く", "ク"]],
+  ["케", ["け", "ケ"]],
+  ["코", ["こ", "コ"]],
 
-  "사": ["さ", "サ"],
-  "시": ["し", "シ"],
-  "스": ["す", "ス"],
-  "세": ["せ", "セ"],
-  "소": ["そ", "ソ"],
+  ["사", ["さ", "サ"]],
+  ["시", ["し", "シ"]],
+  ["스", ["す", "ス"]],
+  ["세", ["せ", "セ"]],
+  ["소", ["そ", "ソ"]],
 
-  "타": ["た", "タ"],
-  "치": ["ち", "チ"],
-  "츠": ["つ", "ツ"],
-  "테": ["て", "テ"],
-  "토": ["と", "ト"],
+  ["타", ["た", "タ"]],
+  ["치", ["ち", "チ"]],
+  ["츠", ["つ", "ツ"]],
+  ["테", ["て", "テ"]],
+  ["토", ["と", "ト"]],
 
-  "나": ["な", "ナ"],
-  "니": ["に", "ニ"],
-  "누": ["ぬ", "ヌ"],
-  "네": ["ね", "ネ"],
-  "노": ["の", "ノ"],
+  ["나", ["な", "ナ"]],
+  ["니", ["に", "ニ"]],
+  ["누", ["ぬ", "ヌ"]],
+  ["네", ["ね", "ネ"]],
+  ["노", ["の", "ノ"]],
 
-  "하": ["は", "ハ"],
-  "히": ["ひ", "ヒ"],
-  "후": ["ふ", "フ"],
-  "헤": ["へ", "ヘ"],
-  "호": ["ほ", "ホ"],
+  ["하", ["は", "ハ"]],
+  ["히", ["ひ", "ヒ"]],
+  ["후", ["ふ", "フ"]],
+  ["헤", ["へ", "ヘ"]],
+  ["호", ["ほ", "ホ"]],
 
-  "마": ["ま", "マ"],
-  "미": ["み", "ミ"],
-  "무": ["む", "ム"],
-  "메": ["め", "メ"],
-  "모": ["も", "モ"],
+  ["마", ["ま", "マ"]],
+  ["미", ["み", "ミ"]],
+  ["무", ["む", "ム"]],
+  ["메", ["め", "メ"]],
+  ["모", ["も", "モ"]],
 
-  "야": ["や", "ヤ"],
-  "유": ["ゆ", "ユ"],
-  "요": ["よ", "ヨ"],
+  ["야", ["や", "ヤ"]],
+  ["유", ["ゆ", "ユ"]],
+  ["요", ["よ", "ヨ"]],
 
-  "라": ["ら", "ラ"],
-  "리": ["り", "リ"],
-  "루": ["る", "ル"],
-  "레": ["れ", "レ"],
-  "로": ["ろ", "ロ"],
+  ["라", ["ら", "ラ"]],
+  ["리", ["り", "リ"]],
+  ["루", ["る", "ル"]],
+  ["레", ["れ", "レ"]],
+  ["로", ["ろ", "ロ"]],
 
-  "와": ["わ", "ワ"],
-  "응": ["ん", "ン"]
-}
+  ["와", ["わ", "ワ"]],
+  ["응", ["ん", "ン"]]
+])
+
 
 export class QueryBuilder {
   hall: Set<string>;
@@ -191,10 +212,9 @@ export class QueryBuilder {
     } else if (isFullwidthLower(locblk)) {
       this.intersectHall(["南"]);
       this.intersectBlk([locblk]);
-    } else if (locblk in KR2JP) {
-      console.log(`locblk in KR2JP: ${locblk} -> ${KR2JP[locblk]}`);
+    } else if (isHatuon(locblk)) {
       this.intersectHall(["東", "西"]);
-      this.intersectBlk(KR2JP[locblk]);
+      this.intersectBlk(HatuonToKana.get(locblk)!);
     } else {
       throw new Error(`Invalid locblk string: ${locblk}`);
     }

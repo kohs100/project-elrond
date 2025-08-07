@@ -25,12 +25,41 @@
   position: absolute;
 }
 
-.booth-txt {
+.booth-info-container {
   overflow: hidden;
   grid-column: 2 / 3;
   width: 100%;
   height: 100%;
   text-align: left;
+  vertical-align: top;
+  display: grid;
+
+  grid-template-rows: 1fr 24px;
+}
+
+.booth-info-text {
+  text-align: left;
+  grid-row: 1 / 2;
+  width: 100%;
+  height: 100%;
+}
+
+.booth-info-colorbar {
+  grid-row: 2 / 3;
+  width: 100%;
+  height: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(8, 24px);
+  column-gap: 1px;
+}
+
+.booth-info-colorbar-elem {
+  grid-column: auto;
+  border: 1px black solid;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
 }
 
 .booth-table {

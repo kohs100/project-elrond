@@ -1,8 +1,9 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { BoothTable } from "../components/BoothList";
 
 import "./Search.css";
 import { QueryBuilder } from "../util/searchType";
+import classNames from "classnames";
 
 const VALID_QUERY =
   /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンーa-zA-Zａ-ｚＡ-Ｚ][0-9]{2}[Aa]*[Bb]*/;
@@ -16,7 +17,7 @@ const SearchBar: React.FC<SearchBarProp> = (props) => {
   const { setBoothIds } = props;
   const [day, setDay] = useState(1);
   const [query, setQuery] = useState("");
-  const [valid, setValid] = useState(true);
+  const [valid, setValid] = useState(false);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -71,6 +72,27 @@ const SearchBar: React.FC<SearchBarProp> = (props) => {
     });
   };
 
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const query = event.target.value;
+    const newQuery = query.normalize("NFKC").replace(/\s/g, "");
+    setQuery(newQuery);
+    if (!VALID_QUERY.test(query)) {
+      setValid(false);
+      return;
+    } else {
+      setValid(true);
+    }
+  };
+
+  const commonClassNames = `
+  border
+  text-sm
+  rounded-lg
+  block
+  w-full
+  p-2.5
+  `;
+
   return (
     <form onSubmit={handleSubmit}>
       <div
@@ -78,13 +100,25 @@ const SearchBar: React.FC<SearchBarProp> = (props) => {
         style={{ marginTop: "10px", marginBottom: "10px" }}
       >
         <input
-          className="searchbar-inp"
+          className={classNames("searchbar-inp", commonClassNames, {
+            "bg-green-50 border-green-300 text-green-900": valid,
+            "bg-red-50 border-red-300 text-red-900": !valid,
+          })}
           type="text"
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={handleChange}
           value={query}
         />
         <select
-          className="searchbar-drop"
+          className={classNames(
+            `
+          searchbar-drop
+          bg-gray-50
+          border-gray-300
+          text-gray-900
+          focus:ring-blue-500
+          focus:border-blue-500`,
+            commonClassNames
+          )}
           onChange={(e) => setDay(Number(e.target.value))}
           value={day}
         >
@@ -92,9 +126,17 @@ const SearchBar: React.FC<SearchBarProp> = (props) => {
           <option value={2}>2일차</option>
         </select>
         <button
-          className="searchbar-submit"
+          className={classNames(
+            `
+            searchbar-submit
+          bg-gray-50
+          border-gray-300
+          text-gray-900
+          focus:ring-blue-500
+          focus:border-blue-500`,
+            commonClassNames
+          )}
           type="submit"
-          style={{ color: valid ? "black" : "red" }}
         >
           OK
         </button>
@@ -112,7 +154,7 @@ const Search = () => {
         <SearchBar boothIds={boothIds} setBoothIds={setBoothIds} />
       </div>
       <div style={{ width: "100vw", height: "80dvh", overflow: "hidden" }}>
-        <BoothTable boothIds={boothIds} scrollable={true} />
+        <BoothTable boothIds={boothIds} scrollable={true} isTouch={false}/>
       </div>
     </div>
   );

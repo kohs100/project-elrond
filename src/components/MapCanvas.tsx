@@ -46,7 +46,7 @@ type MapLabel = {
 type Overlay = {
   coord: BlockCoord;
   locstring: string;
-  is2sp: boolean;
+  locsubsec: 'a' | 'b' | 'ab';
   color: string;
 };
 
@@ -64,6 +64,7 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
   const [mapmeta, setMapmeta] = useState<MapMetadata | null>(null);
 
   const [boothIds, setBoothIds] = useState<number[]>([]);
+  const [wasTouch, setWasTouch] = useState(false);
 
   const { singleton } = useOutletContext<SingletonContextType>();
 
@@ -155,7 +156,8 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
       )
       .eq("user_id", singleton.uid)
       .eq("booth.location_top", mapmeta.location_top)
-      .eq("booth.event_id", mapmeta.event_id);
+      .eq("booth.event_id", mapmeta.event_id)
+      .order('booth(location)', { ascending: true });
 
     if (error) throw error;
     if (data === null) throw new Error("Overlay lookup failed!!");
@@ -165,18 +167,22 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
       if (booth === null) return;
       const { location } = booth;
       const locstring = location.slice(0, 3);
-      const is2sp = locstring.length == 5;
+      const locsubsec = location.slice(3);
+      if (locsubsec !== 'a' && locsubsec !== 'b' && locsubsec !=='ab')
+        throw new Error(`Found invalid locsubsec: ${location}`)
       const coord = coordDict!.getCoord(locstring)!;
 
-      overlays.push({ coord, is2sp, color, locstring });
+      overlays.push({ coord, locsubsec, color, locstring });
     });
     setOverlays(overlays);
   };
 
-  const handleClick = (absCoord: AbsCoord) => {
+  const handleClick = (absCoord: AbsCoord, isTouch: boolean) => {
     const blockCoord = absCoord.intoBlk();
     if (coordDict === null) return;
     if (mapmeta === null) return;
+
+    if (isTouch != wasTouch) setWasTouch(isTouch);
 
     const locstring = coordDict.getLocstring(blockCoord);
     if (locstring) {
@@ -217,8 +223,12 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
         />
         {boothIds.length > 0 ? (
           <div className="map-modal-bg" onClick={() => setBoothIds([])}>
-            <div className="map-modal-dialog-box">
-              <BoothTable boothIds={boothIds} scrollable={false}/>
+            <div className="map-modal-dialog-box" onClick={(e) => e.stopPropagation()}>
+              <BoothTable
+                boothIds={boothIds}
+                scrollable={false}
+                isTouch={wasTouch}
+              />
             </div>
           </div>
         ) : (
@@ -234,7 +244,7 @@ type MapCanvasInnerProp = {
   mapblocks: MapBlock[];
   maplabels: MapLabel[];
   overlays: Overlay[];
-  handleClick: (absCoord: AbsCoord) => void;
+  handleClick: (absCoord: AbsCoord, isTouch: boolean) => void;
 };
 
 function MapCanvasInner({
@@ -299,7 +309,7 @@ function MapCanvasInner({
     });
 
     overlays.forEach((ovl: Overlay) => {
-      const { coord, locstring, color, is2sp } = ovl;
+      const { coord, locstring, color, locsubsec } = ovl;
       if (coord === undefined) {
         console.log(`${locstring} not found!!`);
         return;
@@ -308,12 +318,19 @@ function MapCanvasInner({
 
       ctx.fillStyle = color;
 
-      if (is2sp) {
+      if (locsubsec == 'ab') {
         ctx.fillRect(x, y, BLOCKSIZE, BLOCKSIZE);
-      } else {
+      } else if (locsubsec == 'a'){
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x + BLOCKSIZE, y);
+        ctx.lineTo(x, y + BLOCKSIZE);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(x + BLOCKSIZE, y);
+        ctx.lineTo(x + BLOCKSIZE, y + BLOCKSIZE);
         ctx.lineTo(x, y + BLOCKSIZE);
         ctx.closePath();
         ctx.fill();
@@ -347,7 +364,7 @@ function MapCanvasInner({
       setViewOffset(limitOffset(dViewCoord, offsetLimit, null));
     }
   };
-  const handleUp = (clientxy: ClientXY) => {
+  const handleUp = (clientxy: ClientXY, isTouch: boolean) => {
     setIsDraggingStarted(false);
     if (!isDragging) {
       const canvas = canvasRef.current;
@@ -358,7 +375,8 @@ function MapCanvasInner({
         ViewCoord.fromClient(clientxy)
           .subOffset(canvasOffset)
           .subOffset(viewOffset)
-          .intoAbs(viewScale)
+          .intoAbs(viewScale),
+        isTouch
       );
     }
     setIsDragging(false);
@@ -424,12 +442,12 @@ function MapCanvasInner({
   };
   const handleMouseUp = (e: React.MouseEvent) => {
     e.preventDefault();
-    handleUp(e);
+    handleUp(e, false);
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
     const touch = e.changedTouches[0];
-    handleUp(touch);
+    handleUp(touch, true);
   };
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
