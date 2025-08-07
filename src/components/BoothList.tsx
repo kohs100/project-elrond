@@ -24,8 +24,8 @@ type FavBoothRow = MergeDeep<
   }
 >;
 
-type BoothEntryProp = { boothId: number; isTouch: boolean };
-export function BoothEntry({ boothId, isTouch }: BoothEntryProp) {
+type BoothEntryProp = { boothId: number; isTouch: boolean, triggerOverlayReload?: () => void };
+export function BoothEntry({ boothId, isTouch, triggerOverlayReload }: BoothEntryProp) {
   const [data, setData] = useState<FavBoothRow | null>(null);
   const [color, setColor] = useState<string | null> (null);
   const { singleton } = useOutletContext<SingletonContextType>();
@@ -129,6 +129,7 @@ export function BoothEntry({ boothId, isTouch }: BoothEntryProp) {
         })
       }
       setColor(newcolor);
+      if(triggerOverlayReload) triggerOverlayReload();
     }
   };
 
@@ -213,8 +214,9 @@ type BoothTableProp = {
   boothIds: number[];
   scrollable: boolean;
   isTouch: boolean;
+  triggerOverlayReload?: () => void;
 };
-export function BoothTable({ boothIds, scrollable, isTouch }: BoothTableProp) {
+export function BoothTable({ boothIds, scrollable, isTouch, triggerOverlayReload }: BoothTableProp) {
   return (
     <div
       className="booth-table"
@@ -224,7 +226,7 @@ export function BoothTable({ boothIds, scrollable, isTouch }: BoothTableProp) {
     >
       {boothIds.map((boothId) => (
         <div key={boothId} className="booth-table-entry">
-          <BoothEntry boothId={boothId} isTouch={isTouch} />
+          <BoothEntry boothId={boothId} isTouch={isTouch} triggerOverlayReload={triggerOverlayReload} />
         </div>
       ))}
     </div>

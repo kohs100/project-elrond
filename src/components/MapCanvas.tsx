@@ -77,6 +77,10 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
     setupOverlays();
   }, [coordDict, mapmeta]);
 
+  const triggerOverlayReload = () => {
+    setupOverlays();
+  }
+
   const setupMapmetadata = () => {
     const mapmeta = mapNameDict[mapName];
     const mapblocks: MapBlock[] = [];
@@ -228,6 +232,7 @@ function MapCanvas({ mapName, renderImage = false }: MapCanvasProp) {
                 boothIds={boothIds}
                 scrollable={false}
                 isTouch={wasTouch}
+                triggerOverlayReload={triggerOverlayReload}
               />
             </div>
           </div>
@@ -336,7 +341,7 @@ function MapCanvasInner({
         ctx.fill();
       }
     });
-  }, [viewScale, viewOffset]);
+  }, [viewScale, viewOffset, overlays]);
 
   const handleDown = (clientxy: ClientXY) => {
     setIsDragging(false);
