@@ -1,5 +1,6 @@
 import { BlockCoord, BlockOffset } from "../../util/canvasUtil";
 import { type MapMetadata, LinearRepr, buildColumn as rawBuildColumn } from "../../util/mapType";
+import { ALL_KATAKANA } from "../../util/searchType";
 
 type COL_TYP = "54" | "66" | "62" | "48"
 
@@ -19,6 +20,7 @@ const metadata: MapMetadata = {
   size: new BlockOffset({ x: 117, y: 44 }),
   event_id: 2,
   location_top: "東",
+  location_prefix: ALL_KATAKANA,
   blockDict: {
     "ア": {
       blocks: [

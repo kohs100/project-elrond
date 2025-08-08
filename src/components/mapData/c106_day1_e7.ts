@@ -1,5 +1,6 @@
 import { BlockCoord, BlockOffset } from "../../util/canvasUtil";
 import { type MapMetadata, LinearRepr, buildColumn as rawBuildColumn } from "../../util/mapType";
+import { ALL_FW_UPPER } from "../../util/searchType";
 
 type COL_TYP = "46" | "48" | "12" | "24"
 
@@ -19,6 +20,7 @@ const metadata: MapMetadata = {
   size: new BlockOffset({ x: 62, y: 68 }),
   event_id: 1,
   location_top: "東",
+  location_prefix: ALL_FW_UPPER,
   blockDict: {
     "Ａ": {
       blocks: [

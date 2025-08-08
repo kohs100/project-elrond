@@ -125,4 +125,5 @@ export type MapMetadata = {
   blockDict: Dictionary<BlockMeta>,
   event_id: number,
   location_top: string,
+  location_prefix: readonly string[],
 }

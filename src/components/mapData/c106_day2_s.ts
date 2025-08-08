@@ -98,7 +98,7 @@ const metadata: MapMetadata = {
     "ｑ": buildColumn("44", 12, 29),
     "ｒ": buildColumn("44", 9, 29),
     "ｓ": buildColumn("44", 6, 29),
-    "ｔ": buildColumn("44", 3, 29),
+    // "ｔ": buildColumn("44", 3, 29),
   }
 };
 

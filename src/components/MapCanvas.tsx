@@ -11,6 +11,7 @@ import {
   limitOffset,
   BLOCKSIZE,
   AbsCoord,
+  AbsOffset,
 } from "../util/canvasUtil";
 
 import { type MapMetadata } from "../util/mapType";
@@ -27,7 +28,7 @@ import d2_e7 from "./mapData/c106_day2_e7";
 
 import { supabase } from "../supabaseClient";
 
-import type { SingletonContextType } from "../hooks/useSupabaseAuth";
+import type { Singleton, SingletonContextType } from "../hooks/useSupabaseAuth";
 import { useOutletContext } from "react-router-dom";
 import { QueryBuilder } from "../util/searchType";
 import { BoothTable } from "./BoothList";
@@ -60,16 +61,117 @@ type MapLabel = {
 type Overlay = {
   coord: BlockCoord;
   locstring: string;
-  locsubsec: 'a' | 'b' | 'ab';
+  locsubsec: "a" | "b" | "ab";
   color: string;
 };
 
 type MapCanvasProp = {
   mapName: string;
-  renderImage?: boolean;
+  debugRenderImage?: boolean;
+  debugFillAll?: boolean;
 };
 
-function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
+async function fetchOverlay(
+  coordDict: CoordMap,
+  mapmeta: MapMetadata,
+  singleton: Singleton
+): Promise<Overlay[] | null> {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select(
+      `
+        user_id,
+        booth!inner(
+          id,
+          location_top,
+          location,
+          jname,
+          event_id
+        ),
+        color`
+    )
+    .eq("user_id", singleton.uid)
+    .eq("booth.location_top", mapmeta.location_top)
+    .eq("booth.event_id", mapmeta.event_id)
+    .order("booth(location)", { ascending: true });
+
+  if (error) throw error;
+  if (data === null) throw new Error("Overlay lookup failed!!");
+
+  const overlays: Overlay[] = [];
+  data.forEach(({ booth, color }) => {
+    if (booth === null) return;
+    const { location } = booth;
+    const locstring = location.slice(0, 3);
+    const locsubsec = location.slice(3);
+    if (locsubsec !== "a" && locsubsec !== "b" && locsubsec !== "ab")
+      throw new Error(`Found invalid locsubsec: ${location}`);
+    const coord = coordDict.getCoord(locstring)!;
+
+    overlays.push({ coord, locsubsec, color, locstring });
+  });
+  return overlays;
+}
+
+const BATCH_SIZE=500;
+async function fillAll(
+  coordDict: CoordMap,
+  mapmeta: MapMetadata
+): Promise<Overlay[] | null> {
+  if (coordDict === null || mapmeta === null) return null;
+
+  let allbooth: { id: number, location :string }[] = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("booth")
+      .select(`id, location`)
+      .eq("location_top", mapmeta.location_top)
+      .eq("event_id", mapmeta.event_id)
+      .order("id")
+      .range(offset, offset + BATCH_SIZE - 1);
+    if (error) throw error;
+    if (data === null) throw new Error("Booth lookup failed!!");
+    allbooth = allbooth.concat(data);
+    if (data.length < BATCH_SIZE) {
+      break;
+    } else {
+      offset += BATCH_SIZE;
+    }
+  }
+  console.log(`Fetched all booth: # ${allbooth.length}`)
+
+  const overlays: Overlay[] = [];
+  allbooth.forEach(({ location }) => {
+    const locblk = location[0];
+    const locstring = location.slice(0, 3);
+    const locsubsec = location.slice(3);
+    if (!mapmeta.location_prefix.includes(locblk)) {
+      // console.log(`${locblk} is not valid prefix`)
+      return;
+    }
+    if (locsubsec !== "a" && locsubsec !== "b" && locsubsec !== "ab")
+      throw new Error(`Found invalid locsubsec: ${location}`);
+    const coord = coordDict.getCoord(locstring);
+    if (coord === undefined)
+      throw new Error(`location not found!!: ${location}`);
+
+    overlays.push({
+      coord,
+      locsubsec,
+      color: "rgba(0, 255, 0, 0.5)",
+      locstring,
+    });
+  });
+  console.log(`Generated full overlay: # ${allbooth.length}`)
+  return overlays;
+}
+
+function MapCanvas({
+  mapName,
+  debugRenderImage = true,
+  debugFillAll = true,
+}: MapCanvasProp) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
   const [mapblocks, setMapblocks] = useState<MapBlock[] | null>(null);
@@ -83,17 +185,22 @@ function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
   const { singleton } = useOutletContext<SingletonContextType>();
 
   useEffect(() => {
-    console.log("Rendering MapCanvas");
     setupMapmetadata();
   }, []);
 
   useEffect(() => {
-    setupOverlays();
+    triggerOverlayReload();
   }, [coordDict, mapmeta]);
 
   const triggerOverlayReload = () => {
-    setupOverlays();
-  }
+    if (coordDict && mapmeta)
+      if (debugFillAll)
+        fillAll(coordDict, mapmeta).then((ovls) => setOverlays(ovls));
+      else
+        fetchOverlay(coordDict, mapmeta, singleton).then((ovls) =>
+          setOverlays(ovls)
+        );
+  };
 
   const setupMapmetadata = () => {
     const mapmeta = mapNameDict[mapName];
@@ -103,7 +210,7 @@ function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
 
     const { blockDict, backgroundUrl } = mapmeta;
 
-    if (renderImage && backgroundUrl) {
+    if (debugRenderImage && backgroundUrl) {
       const img = new Image();
       img.src = backgroundUrl;
       img.onload = () => setImage(img);
@@ -156,45 +263,6 @@ function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
     setMapmeta(mapmeta);
   };
 
-  const setupOverlays = async () => {
-    if (coordDict === null || mapmeta === null) return;
-    const { data, error } = await supabase
-      .from("favorites")
-      .select(
-        `
-        user_id,
-        booth!inner(
-          id,
-          location_top,
-          location,
-          jname,
-          event_id
-        ),
-        color`
-      )
-      .eq("user_id", singleton.uid)
-      .eq("booth.location_top", mapmeta.location_top)
-      .eq("booth.event_id", mapmeta.event_id)
-      .order('booth(location)', { ascending: true });
-
-    if (error) throw error;
-    if (data === null) throw new Error("Overlay lookup failed!!");
-
-    const overlays: Overlay[] = [];
-    data.forEach(({ booth, color }) => {
-      if (booth === null) return;
-      const { location } = booth;
-      const locstring = location.slice(0, 3);
-      const locsubsec = location.slice(3);
-      if (locsubsec !== 'a' && locsubsec !== 'b' && locsubsec !=='ab')
-        throw new Error(`Found invalid locsubsec: ${location}`)
-      const coord = coordDict!.getCoord(locstring)!;
-
-      overlays.push({ coord, locsubsec, color, locstring });
-    });
-    setOverlays(overlays);
-  };
-
   const handleClick = (absCoord: AbsCoord, isTouch: boolean) => {
     const blockCoord = absCoord.intoBlk();
     if (coordDict === null) return;
@@ -241,7 +309,10 @@ function MapCanvas({ mapName, renderImage = true }: MapCanvasProp) {
         />
         {boothIds.length > 0 ? (
           <div className="map-modal-bg" onClick={() => setBoothIds([])}>
-            <div className="map-modal-dialog-box" onClick={(e) => e.stopPropagation()}>
+            <div
+              className="map-modal-dialog-box"
+              onClick={(e) => e.stopPropagation()}
+            >
               <BoothTable
                 boothIds={boothIds}
                 scrollable={false}
@@ -328,18 +399,14 @@ function MapCanvasInner({
     });
 
     overlays.forEach((ovl: Overlay) => {
-      const { coord, locstring, color, locsubsec } = ovl;
-      if (coord === undefined) {
-        console.log(`${locstring} not found!!`);
-        return;
-      }
+      const { coord, color, locsubsec } = ovl;
       const { x, y } = coord.intoAbs();
 
       ctx.fillStyle = color;
 
-      if (locsubsec == 'ab') {
+      if (locsubsec == "ab") {
         ctx.fillRect(x, y, BLOCKSIZE, BLOCKSIZE);
-      } else if (locsubsec == 'a'){
+      } else if (locsubsec == "a") {
         ctx.beginPath();
         ctx.moveTo(x, y);
         ctx.lineTo(x + BLOCKSIZE, y);

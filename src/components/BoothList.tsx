@@ -24,10 +24,18 @@ type FavBoothRow = MergeDeep<
   }
 >;
 
-type BoothEntryProp = { boothId: number; isTouch: boolean, triggerOverlayReload?: () => void };
-export function BoothEntry({ boothId, isTouch, triggerOverlayReload }: BoothEntryProp) {
+type BoothEntryProp = {
+  boothId: number;
+  isTouch: boolean;
+  triggerOverlayReload?: () => void;
+};
+export function BoothEntry({
+  boothId,
+  isTouch,
+  triggerOverlayReload,
+}: BoothEntryProp) {
   const [data, setData] = useState<FavBoothRow | null>(null);
-  const [color, setColor] = useState<string | null> (null);
+  const [color, setColor] = useState<string | null>(null);
   const { singleton } = useOutletContext<SingletonContextType>();
 
   const fetchData = async () => {
@@ -116,20 +124,20 @@ export function BoothEntry({ boothId, isTouch, triggerOverlayReload }: BoothEntr
     console.log(`${color} -> ${newcolor}`);
     if (color != newcolor) {
       if (newcolor === null) {
-        await supabase.from("favorites")
+        await supabase
+          .from("favorites")
           .delete()
-          .eq('user_id', singleton.uid)
-          .eq('booth_id', boothId)
-      }
-      else {
+          .eq("user_id", singleton.uid)
+          .eq("booth_id", boothId);
+      } else {
         await supabase.from("favorites").upsert({
           user_id: singleton.uid,
           booth_id: boothId,
-          color: newcolor
-        })
+          color: newcolor,
+        });
       }
       setColor(newcolor);
-      if(triggerOverlayReload) triggerOverlayReload();
+      if (triggerOverlayReload) triggerOverlayReload();
     }
   };
 
@@ -216,7 +224,12 @@ type BoothTableProp = {
   isTouch: boolean;
   triggerOverlayReload?: () => void;
 };
-export function BoothTable({ boothIds, scrollable, isTouch, triggerOverlayReload }: BoothTableProp) {
+export function BoothTable({
+  boothIds,
+  scrollable,
+  isTouch,
+  triggerOverlayReload,
+}: BoothTableProp) {
   return (
     <div
       className="booth-table"
@@ -226,7 +239,11 @@ export function BoothTable({ boothIds, scrollable, isTouch, triggerOverlayReload
     >
       {boothIds.map((boothId) => (
         <div key={boothId} className="booth-table-entry">
-          <BoothEntry boothId={boothId} isTouch={isTouch} triggerOverlayReload={triggerOverlayReload} />
+          <BoothEntry
+            boothId={boothId}
+            isTouch={isTouch}
+            triggerOverlayReload={triggerOverlayReload}
+          />
         </div>
       ))}
     </div>
