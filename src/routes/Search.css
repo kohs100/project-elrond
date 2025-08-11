@@ -1,3 +1,23 @@
+.search-page {
+   width: 100vw;
+   height: 100dvh;
+   overflow: hidden;
+   grid-template-rows: 60px 1fr;
+   display: grid;
+}
+
+.search-topbar {
+  grid-row: 1 / 2;
+  width: 100%;
+  height: 100%;
+}
+
+.search-list {
+  grid-row: 2 / 3;
+  width: 100%;
+  height: 100%;
+}
+
 .searchbar-box {
   grid-template-columns: 1fr 10em 0.5em 4em 2em 1fr;
   grid-column-gap: 3px;

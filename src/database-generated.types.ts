@@ -144,18 +144,21 @@ export type Database = {
           booth_id: number
           color: string
           created_at: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           booth_id: number
           color: string
           created_at?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           booth_id?: number
           color?: string
           created_at?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [

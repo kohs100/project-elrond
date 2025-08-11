@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { BoothTable } from "../components/BoothList";
 
-import "./Search.css";
 import { QueryBuilder } from "../util/searchType";
 import classNames from "classnames";
+
+import "./Search.css";
 
 const VALID_QUERY =
   /[eE동東wW서西sS남南]?[가-힣ぁ-んァ-ンーa-zA-Zａ-ｚＡ-Ｚ][0-9]{2}[Aa]*[Bb]*/;
@@ -149,11 +150,11 @@ const Search = () => {
   const [boothIds, setBoothIds] = useState<number[]>([1, 2, 3, 4, 5, 6, 7, 8]);
 
   return (
-    <div style={{ width: "100vw", height: "100dvh", overflow: "hidden" }}>
-      <div>
+    <div className="search-page">
+      <div className="search-topbar">
         <SearchBar boothIds={boothIds} setBoothIds={setBoothIds} />
       </div>
-      <div style={{ width: "100vw", height: "80dvh", overflow: "hidden" }}>
+      <div className="search-list">
         <BoothTable boothIds={boothIds} scrollable={true} isTouch={false}/>
       </div>
     </div>

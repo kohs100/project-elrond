@@ -1,40 +1,61 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import "tabulator-tables/dist/css/tabulator.min.css";
-import type { Database } from "../database.types";
 
 import "./BoothList.css";
 
-type BoothRow = Database["public"]["Tables"]["booth"]["Row"];
-
 import type { SingletonContextType } from "../hooks/useSupabaseAuth";
 import { useOutletContext } from "react-router-dom";
-import type { MergeDeep } from "type-fest";
+import type { Circle } from "../circle";
 
 const URL_CF_R2 = "https://elrond.ster.email";
+export const FAVORITE_COLORS = [
+  "red",
+  "blue",
+  "orange",
+  "purple",
+  "yellow",
+  "aqua",
+  "green",
+  null,
+] as const;
 
-type FavBoothRow = MergeDeep<
-  BoothRow,
-  {
-    favorites: {
-      booth_id: number;
-      user_id: string;
-      color: string;
-    }[];
-  }
->;
+// type FavBoothRow = MergeDeep<
+//   BoothRow,
+//   {
+//     favorites: {
+//       booth_id: number;
+//       user_id: string;
+//       color: string;
+//     }[];
+//   }
+// >;
+
+export type FavBoothRow = {
+  id: number;
+  circle_id: number;
+  location: string;
+  location_top: string | null;
+  jname: string;
+  favorites: {
+    color: string;
+  }[];
+  data: Circle;
+};
 
 type BoothEntryProp = {
   boothId: number;
   isTouch: boolean;
+  initData?: FavBoothRow;
   triggerOverlayReload?: () => void;
 };
 export function BoothEntry({
   boothId,
   isTouch,
+  initData,
   triggerOverlayReload,
 }: BoothEntryProp) {
-  const [data, setData] = useState<FavBoothRow | null>(null);
+  const [data, setData] = useState<FavBoothRow | null>(initData ? initData : null);
   const [color, setColor] = useState<string | null>(null);
   const { singleton } = useOutletContext<SingletonContextType>();
 
@@ -53,35 +74,37 @@ export function BoothEntry({
       )
       .eq("id", boothId)
       .eq("favorites.user_id", singleton.uid);
-    if (error) {
-      throw error;
-    }
-    if (data) {
-      if (data.length > 1)
-        throw new Error(
-          `Assertion failed: Too many data in booth_id: ${boothId}`
-        );
-      else if (data.length === 0)
-        throw new Error(`Assertion failed: No data in booth_id: ${boothId}`);
+    if (error) throw error;
+    if (data === null) throw new Error("Fetch data failed!!!");
 
-      if (data[0].favorites.length > 1)
-        throw new Error(
-          `Assertion failed: Too many favorites of booth_id: ${boothId}`
-        );
-      else if (data[0].favorites.length == 1) {
-        setColor(data[0].favorites[0].color);
-      }
-      setData(data[0]);
-    } else {
-      throw new Error(`Failed to query booth_id: ${boothId}`);
+    if (data.length > 1)
+      throw new Error(
+        `Assertion failed: Too many data in booth_id: ${boothId}`
+      );
+    else if (data.length === 0)
+      throw new Error(`Assertion failed: No data in booth_id: ${boothId}`);
+
+    return data[0];
+  };
+
+  const initializeData = async () => {
+    const initRow = data ? data : await fetchData();
+
+    if (initRow.favorites.length > 1)
+      throw new Error(
+        `Assertion failed: Too many favorites of booth_id: ${boothId}`
+      );
+    else if (initRow.favorites.length == 1) {
+      setColor(initRow.favorites[0].color);
     }
+    setData(initRow);
   };
 
   useEffect(() => {
-    fetchData();
+    initializeData();
   }, []);
 
-  const generateURLs = (data: BoothRow) => {
+  const generateURLs = (data: FavBoothRow) => {
     const urls: React.JSX.Element[] = [];
 
     if (data.data.IsTwitterRegistered) {
@@ -113,7 +136,7 @@ export function BoothEntry({
     urls.forEach((url, i) => {
       result.push(url);
       if (i < urls.length - 1) {
-        result.push(<span>{" / "}</span>);
+        result.push(<span key={i}>{" / "}</span>);
       }
     });
 
@@ -141,16 +164,7 @@ export function BoothEntry({
     }
   };
 
-  const generatedColors = [
-    "red",
-    "blue",
-    "orange",
-    "purple",
-    "yellow",
-    "aqua",
-    "green",
-    null,
-  ].map((color, idx) => {
+  const generatedColors = FAVORITE_COLORS.map((color, idx) => {
     if (color === null) {
       return (
         <div
@@ -219,33 +233,59 @@ export function BoothEntry({
 }
 
 type BoothTableProp = {
-  boothIds: number[];
+  boothIds?: number[];
+  initDatas?: FavBoothRow[];
   scrollable: boolean;
   isTouch: boolean;
   triggerOverlayReload?: () => void;
 };
 export function BoothTable({
   boothIds,
+  initDatas,
   scrollable,
   isTouch,
   triggerOverlayReload,
 }: BoothTableProp) {
-  return (
-    <div
-      className="booth-table"
-      style={{
-        overflowY: scrollable ? "scroll" : "hidden",
-      }}
-    >
-      {boothIds.map((boothId) => (
-        <div key={boothId} className="booth-table-entry">
-          <BoothEntry
-            boothId={boothId}
-            isTouch={isTouch}
-            triggerOverlayReload={triggerOverlayReload}
-          />
-        </div>
-      ))}
-    </div>
-  );
+  if (initDatas)
+    return (
+      <div
+        className="booth-table"
+        style={{
+          overflowY: scrollable ? "scroll" : "hidden",
+        }}
+      >
+        {initDatas.map((initData) => (
+          <div key={initData.id} className="booth-table-entry">
+            <BoothEntry
+              key={`ENTRY-${initData.id}`}
+              boothId={initData.id}
+              initData={initData}
+              isTouch={isTouch}
+              triggerOverlayReload={triggerOverlayReload}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  else if (boothIds)
+    return (
+      <div
+        className="booth-table"
+        style={{
+          overflowY: scrollable ? "scroll" : "hidden",
+        }}
+      >
+        {boothIds.map((boothId) => (
+          <div key={boothId} className="booth-table-entry">
+            <BoothEntry
+              key={`ENTRY-${boothId}`}
+              boothId={boothId}
+              isTouch={isTouch}
+              triggerOverlayReload={triggerOverlayReload}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  else return <>No available data source!!</>;
 }

@@ -1,5 +1,6 @@
 import { BlockCoord, BlockOffset } from "../../util/canvasUtil";
 import { type MapMetadata, LinearRepr, buildColumn as rawBuildColumn } from "../../util/mapType";
+import { ALL_FW_LOWER } from "../../util/searchType";
 
 type COL_TYP = "44" | "46" | "42"
 
@@ -18,6 +19,7 @@ const metadata: MapMetadata = {
   size: new BlockOffset({ x: 62, y: 34 }),
   event_id: 2,
   location_top: "南",
+  location_prefix: ALL_FW_LOWER,
   blockDict: {
     "ａ": {
       blocks: [
@@ -34,50 +36,50 @@ const metadata: MapMetadata = {
           repr: LinearRepr.fromStr("Y1 N1 Y2 N1 Y5 N5 Y4 N1 Y2 N1 Y2")
         },
         {
-          origin: new BlockCoord({x: 56, y: 1 }),
+          origin: new BlockCoord({ x: 56, y: 1 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y2 N1 Y2 N1 Y2")
         },
         {
-          origin: new BlockCoord({x: 45, y: 2 }),
+          origin: new BlockCoord({ x: 45, y: 2 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y3")
         },
         {
-          origin: new BlockCoord({x: 38, y: 1 }),
+          origin: new BlockCoord({ x: 38, y: 1 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y1 N1 Y2")
         },
         {
-          origin: new BlockCoord({x: 25, y: 1 }),
+          origin: new BlockCoord({ x: 25, y: 1 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y2 N1 Y2 N1 Y3")
         },
         {
-          origin: new BlockCoord({x: 10, y: 1 }),
+          origin: new BlockCoord({ x: 10, y: 1 }),
           axis: "x",
           dir: "-",
           repr: LinearRepr.fromStr("Y3 N2 Y1 N1 Y3")
         },
         {
-          origin: new BlockCoord({x: 0, y:23 }),
+          origin: new BlockCoord({ x: 0, y: 23 }),
           axis: "y",
           dir: "+",
           repr: LinearRepr.fromStr("Y2 N1 Y2 N1 Y2")
         }
         ,
         {
-          origin: new BlockCoord({x: 24, y:31 }),
+          origin: new BlockCoord({ x: 24, y: 31 }),
           axis: "x",
           dir: "+",
           repr: LinearRepr.fromStr("Y3")
         }
       ],
-      maxNum: 73,
+      maxNum: 55,
       labelCoords: []
     },
     "ｂ": buildColumn("46", 57, 29),

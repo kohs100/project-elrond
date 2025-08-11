@@ -79,7 +79,7 @@ const metadata: MapMetadata = {
           repr: LinearRepr.fromStr("Y3")
         }
       ],
-      maxNum: 73,
+      maxNum: 55,
       labelCoords: []
     },
     "ｂ": buildColumn("46", 57, 29),

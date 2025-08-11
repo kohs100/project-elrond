@@ -1,0 +1,88 @@
+.favorite-page {
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+
+  grid-template-rows: auto 1fr;
+  display: grid;
+}
+
+.favorite-page .favorite-topbar {
+  grid-row: 1 / 2;
+}
+
+.favorite-page .favorite-list {
+  grid-row: 2 / 3;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.favorite-topbar {
+  display: flex;
+  width: 100%;
+  flex-flow: row wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.favorite-topbar-select {
+  grid-row: 1 / 2;
+  width: 300px;
+  height: 50px;
+
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: center;
+  background-color: blue;
+}
+
+.favorite-topbar-select-day {
+  width: 80px;
+  height: 40px;
+  text-align: center;
+}
+
+.favorite-topbar-select-hall {
+  width: 80px;
+  height: 40px;
+  text-align: center;
+}
+
+.favorite-topbar-select-color {
+  width: 80px;
+  height: 40px;
+  text-align: center;
+}
+
+.favorite-topbar-pagination {
+  width: 200px;
+  height: 50px;
+  background-color: aqua;
+
+  grid-template-columns: 50px 100px 50px;
+  display: grid;
+}
+
+.favorite-topbar-pagination .lptr {
+  grid-column: 1 / 2;
+  text-align: center;
+  line-height: 40px;
+}
+.favorite-topbar-pagination .ind  {
+  grid-column: 2 / 3;
+  text-align: center;
+  line-height: 40px;
+}
+.favorite-topbar-pagination .rptr {
+  grid-column: 3 / 4;
+  text-align: center;
+  line-height: 40px;
+}
+
+.favorite-box {
+  background-color: lightgray;
+  border: 1pt gray solid;
+  border-radius: 5px;
+  margin: 5px;
+}

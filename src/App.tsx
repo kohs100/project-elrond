@@ -12,6 +12,7 @@ import ResetPassword from "./routes/ResetPassword";
 
 import "./App.css";
 import ResetName from "./routes/ResetName";
+import Favorite from "./routes/Favorite";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/map" element={<FullMap />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-name" element={<ResetName />} />
+          <Route path="/favorite" element={<Favorite />} />
         </Route>
       </Routes>
     </BrowserRouter>
