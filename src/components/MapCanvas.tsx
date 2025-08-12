@@ -169,8 +169,8 @@ async function fillAll(
 
 function MapCanvas({
   mapName,
-  debugRenderImage = true,
-  debugFillAll = true,
+  debugRenderImage = false,
+  debugFillAll = false,
 }: MapCanvasProp) {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [coordDict, setCoordDict] = useState<CoordMap | null>(null);
